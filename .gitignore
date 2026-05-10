@@ -1,0 +1,28 @@
+# Artefactos de Playwright (testing local)
+.playwright-mcp/
+playwright-report/
+
+# Screenshots de debug que tomé yo
+[0-9][0-9]-*.png
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*~
+
+# Secretos (por las dudas)
+.env
+.env.local
+*.key
+
+# Node (si en algún momento agregas tooling)
+node_modules/
+
+# Logs
+*.log

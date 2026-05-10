@@ -1,0 +1,20 @@
+{
+  "name": "Carolina",
+  "short_name": "Carolina",
+  "description": "Gestor personal de causas judiciales",
+  "lang": "es-CL",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FAF9F7",
+  "theme_color": "#6B8E7F",
+  "icons": [
+    {
+      "src": "./icons/app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
