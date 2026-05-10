@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="es-CL">
+<head>
+  <meta charset="UTF-8">
+  <title>Carolina · Test DB</title>
+  <link rel="icon" type="image/svg+xml" href="../icons/app-icon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px; margin: 24px auto; padding: 0 16px; color: #1F2421; background: #FAF9F7; line-height: 1.5; }
+    h1 { font-size: 1.5rem; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0; }
+    button { padding: 10px 14px; border-radius: 8px; border: 1px solid #D4D0C8; background: #FFFFFF; cursor: pointer; font: inherit; }
+    button.primary { background: #6B8E7F; color: white; border-color: #6B8E7F; }
+    button.danger { background: #B8654E; color: white; border-color: #B8654E; }
+    pre { background: #1F2421; color: #E8E5DF; padding: 12px; border-radius: 8px; overflow-x: auto; font-size: 12px; max-height: 400px; }
+    .ok { color: #6B8E7F; font-weight: 600; }
+    .fail { color: #B8654E; font-weight: 600; }
+    .step { padding: 8px 12px; background: white; border-radius: 8px; margin-bottom: 4px; border-left: 3px solid #DDE6E0; }
+    .step.fail { border-left-color: #B8654E; }
+  </style>
+</head>
+<body>
+  <h1>Carolina · Test manual de DB</h1>
+  <p>Esta página corre los tests de db.js sobre IndexedDB real. <strong>Borra los datos al ejecutar la suite</strong>.</p>
+
+  <div class="row">
+    <button class="primary" id="run">Correr suite completa</button>
+    <button id="seed">Crear datos demo</button>
+    <button class="danger" id="clear">Borrar todo</button>
+  </div>
+
+  <div id="results"></div>
+  <pre id="log"></pre>
+
+  <script type="module">
+    import db from '../js/db.js';
+    import { hoyISO } from '../js/lib/fechas.js';
+
+    const resultsEl = document.getElementById('results');
+    const logEl = document.getElementById('log');
+
+    function log(...args) {
+      const line = args.map((a) => typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)).join(' ');
+      logEl.textContent += line + '\n';
+      console.log(...args);
+    }
+
+    function step(name) {
+      const div = document.createElement('div');
+      div.className = 'step';
+      div.textContent = '… ' + name;
+      resultsEl.appendChild(div);
+      return {
+        ok(msg = 'OK') { div.innerHTML = `<span class="ok">✓</span> ${name} — ${msg}`; },
+        fail(msg) { div.classList.add('fail'); div.innerHTML = `<span class="fail">✗</span> ${name} — ${msg}`; },
+      };
+    }
+
+    async function runSuite() {
+      resultsEl.replaceChildren();
+      logEl.textContent = '';
+      log('Limpiando DB...');
+      await db.clearAll();
+
+      // 1. Crear causa
+      let causa;
+      const s1 = step('Crear causa');
+      try {
+        causa = await db.causas.create({
+          rol: 'C-1234-2025',
+          tribunal: '1° Juzgado Civil de Concepción',
+          materia: 'civil',
+          caratulado: 'Pérez con Rojas',
+          parteRepresentada: 'demandante',
+          contraparte: 'Juan Rojas',
+          etapa: 'discusión',
+        });
+        if (!causa.id) throw new Error('Sin id');
+        log('Causa creada:', causa);
+        s1.ok(`id=${causa.id.slice(0, 8)}…`);
+      } catch (e) { s1.fail(e.message); return; }
+
+      // 2. Listar causas
+      const s2 = step('Listar causas activas');
+      try {
+        const list = await db.causas.list({ archivada: false });
+        if (list.length !== 1) throw new Error(`esperado 1, obtenido ${list.length}`);
+        s2.ok(`${list.length} causa(s)`);
+      } catch (e) { s2.fail(e.message); }
+
+      // 3. Buscar causa
+      const s3 = step('Buscar "rojas"');
+      try {
+        const list = await db.causas.search('rojas');
+        if (list.length !== 1) throw new Error(`esperado 1, obtenido ${list.length}`);
+        s3.ok();
+      } catch (e) { s3.fail(e.message); }
+
+      // 4. Update causa
+      const s4 = step('Update causa (etapa)');
+      try {
+        const updated = await db.causas.update(causa.id, { etapa: 'prueba' });
+        if (updated.etapa !== 'prueba') throw new Error('etapa no actualizada');
+        if (!updated.actualizadaEn) throw new Error('actualizadaEn no seteada');
+        s4.ok();
+      } catch (e) { s4.fail(e.message); }
+
+      // 5. Crear tarea hoy
+      const s5 = step('Crear tarea con vencimiento hoy');
+      let tareaHoy;
+      try {
+        tareaHoy = await db.tareas.create({
+          causaId: causa.id,
+          titulo: 'Presentar contestación',
+          tipo: 'plazo',
+          fechaVencimiento: hoyISO(),
+        });
+        if (!tareaHoy.id) throw new Error('Sin id');
+        s5.ok();
+      } catch (e) { s5.fail(e.message); }
+
+      // 6. Crear audiencia hoy con hora
+      const s6 = step('Crear audiencia hoy 14:30');
+      try {
+        await db.tareas.create({
+          causaId: causa.id,
+          titulo: 'Audiencia de juicio',
+          tipo: 'audiencia',
+          fechaVencimiento: hoyISO(),
+          horaVencimiento: '14:30',
+        });
+        s6.ok();
+      } catch (e) { s6.fail(e.message); }
+
+      // 7. Crear tarea bandeja
+      const s7 = step('Crear tarea sin fecha (bandeja)');
+      try {
+        await db.tareas.create({ titulo: 'Llamar a cliente', fechaVencimiento: null });
+        s7.ok();
+      } catch (e) { s7.fail(e.message); }
+
+      // 8. dueToday
+      const s8 = step('db.tareas.dueToday() devuelve plazo + audiencia');
+      try {
+        const list = await db.tareas.dueToday();
+        if (list.length !== 2) throw new Error(`esperado 2, obtenido ${list.length}`);
+        s8.ok(`${list.length} tareas`);
+      } catch (e) { s8.fail(e.message); }
+
+      // 9. audienciasToday
+      const s9 = step('db.tareas.audienciasToday() devuelve solo audiencia');
+      try {
+        const list = await db.tareas.audienciasToday();
+        if (list.length !== 1) throw new Error(`esperado 1, obtenido ${list.length}`);
+        if (list[0].tipo !== 'audiencia') throw new Error('tipo incorrecto');
+        s9.ok();
+      } catch (e) { s9.fail(e.message); }
+
+      // 10. plazosHoyManana excluye audiencias
+      const s10 = step('db.tareas.plazosHoyManana() excluye audiencias');
+      try {
+        const list = await db.tareas.plazosHoyManana();
+        if (list.length !== 1) throw new Error(`esperado 1, obtenido ${list.length}`);
+        if (list[0].tipo === 'audiencia') throw new Error('debería excluir audiencia');
+        s10.ok();
+      } catch (e) { s10.fail(e.message); }
+
+      // 11. inbox
+      const s11 = step('db.tareas.inbox() devuelve tarea sin fecha');
+      try {
+        const list = await db.tareas.inbox();
+        if (list.length !== 1) throw new Error(`esperado 1, obtenido ${list.length}`);
+        if (list[0].fechaVencimiento) throw new Error('debería no tener fecha');
+        s11.ok();
+      } catch (e) { s11.fail(e.message); }
+
+      // 12. nextMicrotasks excluye IDs
+      const s12 = step('nextMicrotasks(3, [...ids ya mostrados])');
+      try {
+        const yaMostrados = (await db.tareas.dueToday()).map((t) => t.id);
+        const micro = await db.tareas.nextMicrotasks(3, yaMostrados);
+        // Solo queda la tarea sin fecha — pero microtareas exige tener fecha. Debería ser 0.
+        if (micro.length !== 0) throw new Error(`esperado 0, obtenido ${micro.length}`);
+        s12.ok('sin más tareas con fecha');
+      } catch (e) { s12.fail(e.message); }
+
+      // 13. Completar tarea
+      const s13 = step('Completar tarea + verificar completadaEn');
+      try {
+        await db.tareas.complete(tareaHoy.id, true);
+        const t = await db.tareas.get(tareaHoy.id);
+        if (!t.completada || !t.completadaEn) throw new Error('no quedó completada');
+        s13.ok();
+      } catch (e) { s13.fail(e.message); }
+
+      // 14. Crear hito
+      const s14 = step('Crear hito y listar por causa');
+      try {
+        await db.hitos.create({
+          causaId: causa.id,
+          fecha: '2026-04-20',
+          tipo: 'notificacion',
+          descripcion: 'Notificación demanda',
+        });
+        const list = await db.hitos.listByCausa(causa.id);
+        if (list.length !== 1) throw new Error(`esperado 1 hito, obtenido ${list.length}`);
+        s14.ok();
+      } catch (e) { s14.fail(e.message); }
+
+      // 15. Archivar causa
+      const s15 = step('Archivar causa y filtrar archivadas=true');
+      try {
+        await db.causas.archive(causa.id, true);
+        const archivadas = await db.causas.list({ archivada: true });
+        const activas = await db.causas.list({ archivada: false });
+        if (archivadas.length !== 1) throw new Error('no quedó archivada');
+        if (activas.length !== 0) throw new Error('todavía aparece como activa');
+        s15.ok();
+      } catch (e) { s15.fail(e.message); }
+
+      // 16. Export / Import roundtrip
+      const s16 = step('Export → clearAll → Import (roundtrip)');
+      try {
+        const dump = await db.exportAll();
+        await db.clearAll();
+        const empty = await db.causas.list();
+        if (empty.length !== 0) throw new Error('clearAll no vació');
+        const counts = await db.importAll(dump);
+        const restored = await db.causas.list();
+        if (restored.length !== 1) throw new Error('import no restauró');
+        s16.ok(`${counts.causas} causas + ${counts.tareas} tareas + ${counts.hitos} hitos`);
+      } catch (e) { s16.fail(e.message); }
+
+      // 17. Eliminar causa borra tareas e hitos asociados
+      const s17 = step('Eliminar causa borra cascada (tareas + hitos)');
+      try {
+        await db.causas.delete(causa.id);
+        const restantes = await db.tareas.listByCausa(causa.id);
+        const hitos = await db.hitos.listByCausa(causa.id);
+        if (restantes.length !== 0) throw new Error(`quedaron ${restantes.length} tareas`);
+        if (hitos.length !== 0) throw new Error(`quedaron ${hitos.length} hitos`);
+        s17.ok();
+      } catch (e) { s17.fail(e.message); }
+
+      log('\nSuite finalizada.');
+    }
+
+    async function seed() {
+      log('Sembrando datos demo...');
+      await db.clearAll();
+
+      const c1 = await db.causas.create({
+        rol: 'C-1234-2025',
+        tribunal: '1° Juzgado Civil de Concepción',
+        materia: 'civil',
+        caratulado: 'Pérez con Rojas',
+        parteRepresentada: 'demandante',
+        contraparte: 'Juan Rojas',
+        etapa: 'prueba',
+        urlOJV: 'https://oficinajudicialvirtual.pjud.cl/',
+      });
+      const c2 = await db.causas.create({
+        rol: 'F-78-2026',
+        tribunal: 'Juzgado de Familia de Concepción',
+        materia: 'familia',
+        caratulado: 'Soto / Muñoz',
+        parteRepresentada: 'demandante',
+        etapa: 'discusión',
+      });
+      const c3 = await db.causas.create({
+        rol: 'L-456-2025',
+        tribunal: 'Juzgado de Letras del Trabajo',
+        materia: 'laboral',
+        caratulado: 'Aravena con Constructora SA',
+        parteRepresentada: 'demandante',
+        etapa: 'sentencia',
+      });
+
+      await db.tareas.create({
+        causaId: c1.id, titulo: 'Audiencia preparatoria',
+        tipo: 'audiencia', fechaVencimiento: hoyISO(), horaVencimiento: '10:30',
+      });
+      await db.tareas.create({
+        causaId: c1.id, titulo: 'Presentar lista de testigos',
+        tipo: 'plazo', fechaVencimiento: hoyISO(),
+      });
+      await db.tareas.create({
+        causaId: c2.id, titulo: 'Subir copia notificación',
+        tipo: 'gestion', fechaVencimiento: addDays(1),
+      });
+      await db.tareas.create({
+        causaId: c3.id, titulo: 'Revisar fallo segunda instancia',
+        tipo: 'gestion', fechaVencimiento: addDays(4),
+      });
+      await db.tareas.create({
+        titulo: 'Llamar al cliente Pérez', tipo: 'gestion', fechaVencimiento: null,
+      });
+      await db.tareas.create({
+        titulo: 'Comprar libro Code de Errázuriz', tipo: 'personal', fechaVencimiento: null,
+      });
+
+      await db.hitos.create({
+        causaId: c1.id, fecha: '2025-11-04', tipo: 'notificacion',
+        descripcion: 'Notificación demanda',
+      });
+      await db.hitos.create({
+        causaId: c1.id, fecha: '2026-02-12', tipo: 'resolucion',
+        descripcion: 'Recibimiento de prueba',
+      });
+
+      log('Demo lista. Abre la app principal para verla.');
+    }
+
+    function addDays(n) {
+      const d = new Date();
+      d.setDate(d.getDate() + n);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${dd}`;
+    }
+
+    document.getElementById('run').addEventListener('click', runSuite);
+    document.getElementById('seed').addEventListener('click', seed);
+    document.getElementById('clear').addEventListener('click', async () => {
+      await db.clearAll();
+      log('DB vacía.');
+    });
+  </script>
+</body>
+</html>
