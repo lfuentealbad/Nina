@@ -901,6 +901,28 @@ details.collapsible > .body { padding-top: var(--space-4); }
   font-weight: var(--weight-semibold);
 }
 
+/* ===== Sugeridor de tareas huérfanas ===== */
+.huerfanas-lista {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  max-height: 50vh;
+  overflow-y: auto;
+}
+.huerfanas-fila {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+}
+.huerfanas-fila:hover { background: var(--surface-muted); }
+.huerfanas-fila input[type="checkbox"] { width: 18px; height: 18px; }
+
 /* ===== Picker de causa con autocompletado ===== */
 .causa-picker {
   position: relative;
