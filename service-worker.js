@@ -1,6 +1,6 @@
 // Service worker — estrategia cache-first para shell, fallback a index.html para navegación SPA.
 // Versión bumpeada → invalida cachés viejas en activate.
-const VERSION = 'nina-v2-2026-05';
+const VERSION = 'nina-v3-aranceles-2026-05';
 
 // BASE resuelve correctamente sea hosting en raíz o en subpath de GitHub Pages.
 const BASE = new URL('./', self.location.href).pathname;
@@ -26,6 +26,8 @@ const SHELL = [
   BASE + 'js/lib/reprogramar.js',
   BASE + 'js/lib/aviso-diario.js',
   BASE + 'js/lib/bienvenida.js',
+  BASE + 'js/lib/indicadores.js',
+  BASE + 'js/lib/aranceles-base.js',
   BASE + 'js/views/hoy.js',
   BASE + 'js/views/hoy-todas.js',
   BASE + 'js/views/causas-lista.js',
@@ -35,6 +37,8 @@ const SHELL = [
   BASE + 'js/views/captura-rapida.js',
   BASE + 'js/views/ajustes.js',
   BASE + 'js/views/tarea-actions.js',
+  BASE + 'js/views/calculadora.js',
+  BASE + 'js/views/arancel-form.js',
   BASE + 'icons/app-icon.svg',
 ];
 
