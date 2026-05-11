@@ -108,6 +108,7 @@ fabEl.addEventListener('click', () => openCapturaRapida());
 // ===== Router =====
 const ROUTES = [
   { pattern: /^#?$|^#hoy$/,                    view: () => import('./views/hoy.js'),         params: () => ({}),                showFab: true,  showNav: true },
+  { pattern: /^#hoy\/todas$/,                  view: () => import('./views/hoy-todas.js'),   params: () => ({}),                showFab: true,  showNav: true },
   { pattern: /^#causas\/nueva$/,               view: () => import('./views/causa-form.js'),  params: () => ({}),                showFab: false, showNav: true },
   { pattern: /^#causas\/([^/]+)\/editar$/,     view: () => import('./views/causa-form.js'),  params: (m) => ({ id: m[1] }),     showFab: false, showNav: true },
   { pattern: /^#causas\/([^/]+)$/,             view: () => import('./views/causa-ficha.js'), params: (m) => ({ id: m[1] }),     showFab: true,  showNav: true },

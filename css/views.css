@@ -111,6 +111,125 @@
 }
 .hoy-ver-mas:hover { color: var(--accent-primary); }
 
+/* ===== Vista #hoy/todas ===== */
+.view-hoy-todas {
+  padding-top: var(--space-5);
+  padding-bottom: var(--space-9);
+}
+.todas-encabezado {
+  margin-bottom: var(--space-5);
+}
+.todas-volver {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  margin-bottom: var(--space-3);
+}
+.todas-volver:hover { color: var(--accent-primary); }
+.todas-titulo {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+  letter-spacing: 0;
+}
+.todas-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.todas-fila {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border-subtle);
+  transition: opacity var(--duration-exit) var(--ease-in);
+}
+.todas-fila.completing {
+  opacity: 0;
+  transform: translateX(8px);
+}
+.todas-check {
+  flex-shrink: 0;
+  width: 44px; height: 44px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+}
+.todas-check::before {
+  content: "";
+  width: 22px; height: 22px;
+  border: 2px solid var(--border-strong);
+  border-radius: 50%;
+  background: transparent;
+  transition: border-color var(--duration-micro);
+}
+.todas-check:hover::before { border-color: var(--accent-primary); }
+.todas-cuerpo { flex: 1; min-width: 0; }
+.todas-titulo-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.todas-titulo {
+  font-size: var(--text-base);
+  color: var(--text-primary);
+  line-height: var(--lh-snug);
+}
+.todas-causa {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.todas-hora {
+  flex-shrink: 0;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.todas-seccion {
+  margin-top: var(--space-6);
+}
+.todas-seccion-eyebrow {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-3);
+}
+
+/* Punto + texto del semáforo en filas de lista */
+.sem-dot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--text-tertiary);
+  flex-shrink: 0;
+}
+.sem-dot.semaforo-urgent { background: var(--status-urgent); }
+.sem-dot.semaforo-warn   { background: var(--status-warn); }
+.sem-dot.semaforo-soon   { background: var(--text-secondary); }
+.sem-dot.semaforo-far    { background: var(--text-tertiary); }
+
+.sem-texto {
+  font-size: var(--text-xs);
+  white-space: nowrap;
+}
+.sem-texto.semaforo-urgent { color: var(--status-urgent); font-weight: var(--weight-semibold); }
+.sem-texto.semaforo-warn   { color: var(--status-warn); font-weight: var(--weight-semibold); }
+.sem-texto.semaforo-soon   { color: var(--text-secondary); }
+.sem-texto.semaforo-far    { color: var(--text-tertiary); }
+
 /* Empty state Hoy — frase del día y CTA secundario */
 .hoy-empty {
   padding: var(--space-7) 0;
