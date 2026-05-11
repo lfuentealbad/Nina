@@ -1,10 +1,11 @@
 // Ficha de causa — secciones colapsables: Datos / Tareas / Hitos / Notas.
 
 import db from '../db.js';
-import { el, mount, toast, debounce, confirmar } from '../lib/render.js';
+import { el, mount, toast, debounce, confirmar, modal } from '../lib/render.js';
 import { icon } from '../lib/icons.js';
 import { semaforo, formatoCorto, formatoLargo } from '../lib/fechas.js';
 import { openAccionesMenu } from './tarea-actions.js';
+import { setPreseleccion } from './calculadora.js';
 
 const PARTE_LABELS = {
   demandante: 'Demandante',
@@ -107,6 +108,12 @@ export default async function renderFicha(root, { id }) {
       style: { width: '100%' },
     }, [icon('edit', { size: 18 }), el('span', { text: 'Editar datos' })]);
 
+    const calcularBtn = el('button.btn.btn-secondary', {
+      type: 'button',
+      style: { width: '100%' },
+      on: { click: () => abrirSheetAranceles(c.id) },
+    }, [icon('calculator', { size: 18 }), el('span', { text: 'Calcular con tabla de aranceles' })]);
+
     return el('details.collapsible', { open: true }, [
       el('summary', { text: 'Datos generales' }),
       el('div.body', {}, [
@@ -118,6 +125,7 @@ export default async function renderFicha(root, { id }) {
             }),
           ])
         ),
+        calcularBtn,
         ojvBtn,
         editBtn,
       ]),
@@ -389,4 +397,61 @@ async function abrirNuevoHito(causaId, onSaved) {
   ]);
 
   close = modal(content, { ariaLabel: 'Nuevo hito' });
+}
+
+// ===== Sheet para elegir arancel y abrir calculadora con causa preseleccionada =====
+async function abrirSheetAranceles(causaId) {
+  const todos = await db.aranceles.listVisibles();
+  if (todos.length === 0) {
+    location.hash = '#calculadora';
+    return;
+  }
+
+  let close;
+  const lista = el('div.huerfanas-lista');
+  const buscador = el('input.input.search-input', {
+    type: 'search',
+    placeholder: 'Buscar arancel…',
+    autocomplete: 'off',
+    on: { input: debounce((e) => pintar(e.target.value), 200) },
+  });
+
+  function pintar(q) {
+    const qLower = (q || '').toLowerCase().trim();
+    const filtrados = qLower
+      ? todos.filter((a) =>
+          (a.gestion || '').toLowerCase().includes(qLower) ||
+          (a.notas || '').toLowerCase().includes(qLower))
+      : todos;
+    lista.replaceChildren(...filtrados.slice(0, 20).map((a) =>
+      el('button.causa-sugerencia', {
+        type: 'button',
+        on: { click: () => {
+          setPreseleccion({ arancelId: a.id, causaId });
+          close();
+          location.hash = '#calculadora';
+        } },
+      }, [
+        el('div.causa-sugerencia-tit', { text: a.gestion }),
+        el('div.causa-sugerencia-meta', {
+          text: `${a.monto} ${a.moneda === 'porcentaje' ? '%' : a.moneda}`,
+        }),
+      ])
+    ));
+  }
+  pintar('');
+
+  const content = el('div.stack', {}, [
+    el('div.modal-header', {}, [
+      el('div.modal-title', { text: 'Elegir arancel' }),
+      el('button.btn-icon', {
+        type: 'button', aria: { label: 'Cerrar' },
+        on: { click: () => close() },
+      }, [icon('x', { size: 22 })]),
+    ]),
+    buscador,
+    lista,
+  ]);
+
+  close = modal(content, { ariaLabel: 'Elegir arancel' });
 }
