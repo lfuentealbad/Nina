@@ -5,6 +5,7 @@ import db from '../db.js';
 import { el, mount, toast, confirmar } from '../lib/render.js';
 import { icon } from '../lib/icons.js';
 import { hoyISO } from '../lib/fechas.js';
+import { ofrecerBorrarEjemplosSiPrimerRegistroPropio } from '../lib/datos-ejemplo.js';
 
 const TIPOS = [
   ['gestion', 'Gestión'],
@@ -175,6 +176,7 @@ export default async function renderTareaForm(root, { id } = {}) {
     } else {
       await db.tareas.create(data);
       toast('Tarea creada');
+      ofrecerBorrarEjemplosSiPrimerRegistroPropio(db, toast);
     }
     location.hash = backHref;
   }

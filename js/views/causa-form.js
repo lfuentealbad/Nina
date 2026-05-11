@@ -4,6 +4,7 @@
 import db from '../db.js';
 import { el, mount, toast, confirmar } from '../lib/render.js';
 import { icon } from '../lib/icons.js';
+import { ofrecerBorrarEjemplosSiPrimerRegistroPropio } from '../lib/datos-ejemplo.js';
 
 const MATERIAS = [
   ['civil', 'Civil'],
@@ -167,6 +168,7 @@ export default async function renderCausaForm(root, { id } = {}) {
     } else {
       const created = await db.causas.create(data);
       toast('Causa creada');
+      ofrecerBorrarEjemplosSiPrimerRegistroPropio(db, toast);
       location.hash = `#causas/${created.id}`;
     }
   }

@@ -5,6 +5,7 @@ import db from '../db.js';
 import { el, modal, toast } from '../lib/render.js';
 import { hoyISO, formatoCorto } from '../lib/fechas.js';
 import { icon } from '../lib/icons.js';
+import { ofrecerBorrarEjemplosSiPrimerRegistroPropio } from '../lib/datos-ejemplo.js';
 
 /** Abre el modal de captura rápida. Crea una tarea sin fecha (bandeja de entrada). */
 export async function openCapturaRapida() {
@@ -75,6 +76,7 @@ export async function openCapturaRapida() {
     await db.tareas.create(data);
     close();
     toast('Anotada en bandeja de entrada');
+    ofrecerBorrarEjemplosSiPrimerRegistroPropio(db, toast);
     // Refrescar vista actual si es Hoy.
     if (location.hash === '' || location.hash === '#' || location.hash === '#hoy') {
       window.dispatchEvent(new HashChangeEvent('hashchange'));

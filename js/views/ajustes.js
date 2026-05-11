@@ -4,12 +4,14 @@ import db from '../db.js';
 import { el, mount, toast, confirmar } from '../lib/render.js';
 import { icon } from '../lib/icons.js';
 import { hoyISO, nowTimestamp } from '../lib/fechas.js';
+import { borrarEjemplos, quedanEjemplos } from '../lib/datos-ejemplo.js';
 
 const APP_VERSION = '1.0.0';
 
-export default function renderAjustes(root) {
+export default async function renderAjustes(root) {
   const tema = localStorage.getItem('tema') || 'sistema';
   const nombre = localStorage.getItem('nombre') || 'Carolina';
+  const hayEjemplos = await quedanEjemplos(db);
 
   const view = el('div.view-ajustes.app-container', {}, [
     el('h1.ajustes-display', { text: 'ajustes' }),
@@ -71,6 +73,18 @@ export default function renderAjustes(root) {
           type: 'button',
           on: { click: importar },
         }, [icon('upload', { size: 18 }), el('span', { text: 'Importar' })]),
+      ]),
+    ]),
+
+    // Datos de ejemplo (solo si quedan)
+    hayEjemplos && el('section.ajustes-section', {}, [
+      el('div.ajustes-section-title', { text: 'Datos' }),
+      el('div.ajustes-row', {}, [
+        el('span.label-only', { text: 'Datos de ejemplo' }),
+        el('button.btn.btn-secondary', {
+          type: 'button',
+          on: { click: () => borrarEjemplosUI(root) },
+        }, [el('span', { text: 'Borrar datos de ejemplo' })]),
       ]),
     ]),
 
@@ -163,6 +177,18 @@ async function importar() {
   });
 
   fileInput.click();
+}
+
+async function borrarEjemplosUI(root) {
+  const ok = await confirmar({
+    titulo: '¿Borrar todos los ejemplos?',
+    mensaje: 'Esto no afecta los datos que vos cargaste.',
+    confirmLabel: 'Borrar ejemplos',
+  });
+  if (!ok) return;
+  await borrarEjemplos(db);
+  toast('Listo, ejemplos borrados');
+  renderAjustes(root);
 }
 
 async function borrarTodo() {

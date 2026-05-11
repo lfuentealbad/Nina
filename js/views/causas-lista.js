@@ -173,7 +173,10 @@ export default async function renderCausasLista(root) {
         c.rol && el('span.dot', { text: '·' }),
         c.rol && el('span.tabular', { text: c.rol }),
       ]),
-      el('div.causa-titulo', { text: c.caratulado || '(sin caratulado)' }),
+      el('div.causa-titulo', {}, [
+        el('span', { text: c.caratulado || '(sin caratulado)' }),
+        c.esEjemplo && el('span.badge-ejemplo', { text: 'ejemplo' }),
+      ]),
       c.tribunal && el('div.causa-tribunal', { text: c.tribunal }),
       proxima && el('div.causa-next', {}, [
         sem && el('span', { class: `semaforo ${sem.class}`, text: sem.label.toLowerCase() }),

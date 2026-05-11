@@ -115,7 +115,10 @@ function renderProximo({ tipo, tarea, causa }) {
     el('div.hoy-next-eyebrow', { text: eyebrow }),
     // Hora prominente solo para audiencias. Para plazos hoy, omitir (eyebrow ya dice "Hoy").
     isAudiencia && el('div.hoy-next-hora.tabular', { text: tarea.horaVencimiento || '—' }),
-    el('div.hoy-next-titulo', { text: tarea.titulo }),
+    el('div.hoy-next-titulo', {}, [
+      el('span', { text: tarea.titulo }),
+      tarea.esEjemplo && el('span.badge-ejemplo', { text: 'ejemplo' }),
+    ]),
     meta && el('div.hoy-next-meta', { text: meta }),
   ]);
 }
@@ -175,6 +178,7 @@ function renderTareaRow(t, onChange) {
           class: `tarea-subprogress${subComplete ? ' complete' : ''}`,
           text: `${subDone}/${subTotal}`,
         }),
+        t.esEjemplo && el('span.badge-ejemplo', { text: 'ejemplo' }),
       ]),
       el('div.tarea-meta', {}, [
         sem && el('span', { class: `semaforo ${sem.class}`, text: sem.label.toLowerCase() }),
