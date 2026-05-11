@@ -1,6 +1,6 @@
 // Service worker — estrategia cache-first para shell, fallback a index.html para navegación SPA.
 // Versión bumpeada → invalida cachés viejas en activate.
-const VERSION = 'carolina-v7';
+const VERSION = 'nina-v2-2026-05';
 
 // BASE resuelve correctamente sea hosting en raíz o en subpath de GitHub Pages.
 const BASE = new URL('./', self.location.href).pathname;
@@ -27,9 +27,8 @@ const SHELL = [
   BASE + 'js/views/captura-rapida.js',
   BASE + 'js/views/ajustes.js',
   BASE + 'js/views/tarea-actions.js',
+  BASE + 'js/lib/datos-ejemplo.js',
   BASE + 'icons/app-icon.svg',
-  BASE + 'fonts/InterVariable.woff2',
-  BASE + 'fonts/InterVariable-Italic.woff2',
 ];
 
 self.addEventListener('install', (event) => {

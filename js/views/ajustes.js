@@ -6,11 +6,9 @@ import { icon } from '../lib/icons.js';
 import { hoyISO, nowTimestamp } from '../lib/fechas.js';
 import { borrarEjemplos, quedanEjemplos } from '../lib/datos-ejemplo.js';
 
-const APP_VERSION = '1.0.0';
-
 export default async function renderAjustes(root) {
   const tema = localStorage.getItem('tema') || 'sistema';
-  const nombre = localStorage.getItem('nombre') || 'Carolina';
+  const nombre = localStorage.getItem('nombre') || 'Nina';
   const hayEjemplos = await quedanEjemplos(db);
 
   const view = el('div.view-ajustes.app-container', {}, [
@@ -47,7 +45,7 @@ export default async function renderAjustes(root) {
           aria: { label: 'Tu nombre' },
           on: {
             blur: (e) => {
-              const v = e.target.value.trim() || 'Carolina';
+              const v = e.target.value.trim() || 'Nina';
               localStorage.setItem('nombre', v);
               toast('Nombre guardado');
             },
@@ -99,10 +97,6 @@ export default async function renderAjustes(root) {
         }, [el('span', { text: 'Borrar' })]),
       ]),
     ]),
-
-    el('p.version-tag', {
-      text: `Carolina v${APP_VERSION} · Fase 1`,
-    }),
   ]);
 
   mount(root, view);
@@ -128,7 +122,7 @@ async function exportar() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `carolina-${hoyISO()}.json`;
+  a.download = `nina-${hoyISO()}.json`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -155,7 +149,7 @@ async function importar() {
     }
 
     if (!data.causas && !data.tareas && !data.hitos) {
-      toast('Archivo inválido (no es backup de Carolina)');
+      toast('Archivo inválido (no es backup de Nina)');
       return;
     }
 

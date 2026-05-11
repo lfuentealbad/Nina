@@ -61,7 +61,7 @@ function renderNav(currentHash) {
   sidebarEl.replaceChildren();
   sidebarEl.appendChild(el('div.sidebar-brand', {}, [
     el('span.brand-dot', { aria: { hidden: 'true' } }),
-    el('span', { text: 'Carolina' }),
+    el('span', { text: 'Nina' }),
   ]));
 
   // Botón Capturar (reemplaza al FAB en desktop)
@@ -91,7 +91,7 @@ function renderNav(currentHash) {
       aria: { current: isActive ? 'page' : 'false' },
     }, [icon(item.iconName, { size: 18 }), el('span', { text: item.label })]));
   }
-  sidebarEl.appendChild(el('div.sidebar-version', { text: 'Carolina v1.5' }));
+  // Versión oculta de la UI; disponible en window.NINA_VERSION para debug.
 }
 
 function matchesNav(current, navHash) {

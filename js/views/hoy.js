@@ -23,7 +23,7 @@ export default async function renderHoy(root) {
   const porHacer = [...plazos, ...microtareas];
 
   const proximo = await pickProximo(audiencias, plazos);
-  const nombre = localStorage.getItem('nombre') || 'Carolina';
+  const nombre = localStorage.getItem('nombre') || 'Nina';
 
   // Mostrar "Revisar día" si hay pendientes hoy y son después de las 16:00 (señal del fin de jornada)
   const hour = new Date().getHours();
