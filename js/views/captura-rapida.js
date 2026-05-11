@@ -9,7 +9,7 @@ import { hoyISO, formatoCorto } from '../lib/fechas.js';
 import { icon } from '../lib/icons.js';
 import { parsearCaptura } from '../lib/parser.js';
 import { ofrecerBorrarEjemplosSiPrimerRegistroPropio } from '../lib/datos-ejemplo.js';
-import { despacharACalendario } from '../lib/calendar.js';
+import { abrirMenuCalendario } from '../lib/calendar.js';
 
 const ETIQUETAS_TIPO = {
   audiencia: 'audiencia',
@@ -53,6 +53,12 @@ export async function openCapturaRapida() {
   });
 
   const chipsRow = el('div.captura-chips');
+  const nudgeAranceles = el('a.captura-nudge', {
+    href: '#calculadora',
+    text: '¿Quieres calcular honorarios? Ir a la calculadora →',
+    hidden: true,
+    on: { click: () => close() },
+  });
 
   const causaSelect = el('select.select', {
     aria: { label: 'Causa relacionada (opcional)' },
@@ -86,6 +92,7 @@ export async function openCapturaRapida() {
       type: 'submit', text: 'Guardar',
       style: { marginTop: 'var(--space-3)' },
     }),
+    nudgeAranceles,
   ]);
 
   close = modal(content, { ariaLabel: 'Captura rápida' });
@@ -98,6 +105,7 @@ export async function openCapturaRapida() {
       estado.horaVencimiento = null;
       estado.tipo = 'gestion';
       renderChips();
+      actualizarNudge('');
       return;
     }
     const parsed = parsearCaptura(raw);
@@ -106,6 +114,11 @@ export async function openCapturaRapida() {
     estado.horaVencimiento = parsed.horaVencimiento;
     estado.tipo = parsed.tipo;
     renderChips();
+    actualizarNudge(raw);
+  }
+
+  function actualizarNudge(texto) {
+    nudgeAranceles.hidden = !mencionaHonorarios(texto);
   }
 
   function renderChips() {
@@ -153,7 +166,7 @@ export async function openCapturaRapida() {
     // Auto-calendario: si está activado y es una audiencia con fecha y hora.
     if (debeAutoEnviarseACalendario(creada)) {
       const causa = creada.causaId ? await db.causas.get(creada.causaId) : null;
-      despacharACalendario(creada, causa, toast);
+      abrirMenuCalendario(creada, causa, toast);
     }
     window.dispatchEvent(new HashChangeEvent('hashchange'));
   }
@@ -164,6 +177,15 @@ function debeAutoEnviarseACalendario(tarea) {
     && tarea.tipo === 'audiencia'
     && !!tarea.fechaVencimiento
     && !!tarea.horaVencimiento;
+}
+
+// Detecta si el texto menciona honorarios. Word-boundary para "UF" y "UTM";
+// "$" matchea cuando viene pegado a número ("$500.000").
+const REGEX_HONORARIOS = /\b(cobrar|honorarios|pesos|UF|UTM)\b|\$\d/i;
+
+function mencionaHonorarios(s) {
+  if (!s) return false;
+  return REGEX_HONORARIOS.test(s);
 }
 
 function chip(icono, texto, onRemove) {

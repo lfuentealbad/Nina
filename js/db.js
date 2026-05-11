@@ -16,7 +16,14 @@ import { uuid } from './lib/render.js';
 import { nowTimestamp, hoyISO } from './lib/fechas.js';
 
 const DB_NAME = 'carolina';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
+
+const INDICADORES_FALLBACK = {
+  uf:    { valor: 39000, fecha: '2026-01-01' },
+  utm:   { valor: 68000, fecha: '2026-01-01' },
+  dolar: { valor: 940,   fecha: '2026-01-01' },
+  euro:  { valor: 1015,  fecha: '2026-01-01' },
+};
 
 let dbPromise = null;
 
@@ -26,6 +33,7 @@ function openDb() {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
     req.onupgradeneeded = (e) => {
       const idb = e.target.result;
+      const upgradeTx = e.target.transaction;
       if (!idb.objectStoreNames.contains('causas')) {
         const s = idb.createObjectStore('causas', { keyPath: 'id' });
         s.createIndex('archivada', 'archivada');
@@ -42,6 +50,25 @@ function openDb() {
         const s = idb.createObjectStore('hitos', { keyPath: 'id' });
         s.createIndex('causaId', 'causaId');
         s.createIndex('fecha', 'fecha');
+      }
+      // v2: indicadores económicos en línea (UF, UTM, dólar, euro).
+      if (!idb.objectStoreNames.contains('indicadores')) {
+        idb.createObjectStore('indicadores', { keyPath: 'id' });
+        // Sembrado con valores de fallback marcados como tales.
+        const seedStore = upgradeTx.objectStore('indicadores');
+        const ahora = nowTimestamp();
+        for (const [id, info] of Object.entries(INDICADORES_FALLBACK)) {
+          seedStore.put({
+            id, valor: info.valor, fecha: info.fecha,
+            fuente: 'fallback', actualizadoEn: ahora,
+          });
+        }
+      }
+      // v2: aranceles profesionales (referenciales del Colegio + propios).
+      if (!idb.objectStoreNames.contains('aranceles')) {
+        const s = idb.createObjectStore('aranceles', { keyPath: 'id' });
+        s.createIndex('materia', 'materia');
+        s.createIndex('esReferencial', 'esReferencial');
       }
     };
     req.onsuccess = () => resolve(req.result);
@@ -395,7 +422,100 @@ async function clearAll() {
   await Promise.all([clearStore('causas'), clearStore('tareas'), clearStore('hitos')]);
 }
 
-const db = { causas, tareas, hitos, exportAll, importAll, clearAll, openDb };
+// ===== INDICADORES =====
+// Valores económicos en línea (UF, UTM, dólar, euro). Refresco desde
+// mindicador.cl gestionado en lib/indicadores.js; aquí solo persistencia.
+const indicadores = {
+  get: (id) => getOne('indicadores', id),
+
+  async getAll() {
+    const all = await getAll('indicadores');
+    const map = {};
+    for (const ind of all) map[ind.id] = ind;
+    return map;
+  },
+
+  async upsert(id, valor, fecha, fuente = 'mindicador') {
+    return putOne('indicadores', {
+      id, valor, fecha, fuente, actualizadoEn: nowTimestamp(),
+    });
+  },
+};
+
+// ===== ARANCELES =====
+// Honorarios referenciales editables. Los referenciales precargados se
+// pueden ocultar (no borrar) con `ocultoPorUsuario: true`.
+const aranceles = {
+  async create(data) {
+    const item = {
+      id: uuid(),
+      materia: 'otro',
+      gestion: '',
+      monto: 0,
+      moneda: 'UF',
+      notas: '',
+      esReferencial: false,
+      ocultoPorUsuario: false,
+      ...data,
+      creadoEn: nowTimestamp(),
+      actualizadoEn: nowTimestamp(),
+    };
+    await putOne('aranceles', item);
+    return item;
+  },
+
+  async update(id, updates) {
+    const existing = await getOne('aranceles', id);
+    if (!existing) throw new Error(`Arancel ${id} no existe`);
+    const updated = { ...existing, ...updates, actualizadoEn: nowTimestamp() };
+    await putOne('aranceles', updated);
+    return updated;
+  },
+
+  delete: (id) => deleteOne('aranceles', id),
+  get: (id) => getOne('aranceles', id),
+  list: () => getAll('aranceles'),
+
+  async listVisibles() {
+    const all = await getAll('aranceles');
+    return all.filter((a) => !a.ocultoPorUsuario);
+  },
+
+  async listOcultos() {
+    const all = await getAll('aranceles');
+    return all.filter((a) => a.ocultoPorUsuario);
+  },
+
+  async listByMateria(materia) {
+    const all = await aranceles.listVisibles();
+    return all.filter((a) => a.materia === materia);
+  },
+
+  async search(query) {
+    if (!query) return aranceles.listVisibles();
+    const q = query.toLowerCase().trim();
+    const all = await aranceles.listVisibles();
+    return all.filter((a) =>
+      (a.gestion || '').toLowerCase().includes(q) ||
+      (a.notas || '').toLowerCase().includes(q)
+    );
+  },
+
+  async toggleOculto(id) {
+    const existing = await getOne('aranceles', id);
+    if (!existing) return null;
+    return aranceles.update(id, { ocultoPorUsuario: !existing.ocultoPorUsuario });
+  },
+
+  async borrarPropios() {
+    const all = await getAll('aranceles');
+    const propios = all.filter((a) => !a.esReferencial);
+    for (const a of propios) await deleteOne('aranceles', a.id);
+    return propios.length;
+  },
+};
+
+const db = { causas, tareas, hitos, indicadores, aranceles, exportAll, importAll, clearAll, openDb };
 
 // Exponer en window para tests manuales en consola.
 if (typeof window !== 'undefined') window.db = db;

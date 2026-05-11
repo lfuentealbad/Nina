@@ -1,10 +1,11 @@
 // Pantalla Ajustes — tema, nombre, avisos, datos, zona peligrosa.
 
 import db from '../db.js';
-import { el, mount, toast, confirmar } from '../lib/render.js';
+import { el, mount, toast, confirmar, modal } from '../lib/render.js';
 import { icon } from '../lib/icons.js';
 import { hoyISO, nowTimestamp } from '../lib/fechas.js';
 import { borrarEjemplos, quedanEjemplos } from '../lib/datos-ejemplo.js';
+import { refrescarIndicadores } from '../lib/indicadores.js';
 
 const KEY_AUTO_CAL = 'auto-calendario';
 
@@ -12,6 +13,7 @@ export default async function renderAjustes(root) {
   const tema = localStorage.getItem('tema') || 'sistema';
   const nombre = localStorage.getItem('nombre') || 'Nina';
   const hayEjemplos = await quedanEjemplos(db);
+  const ocultos = await db.aranceles.listOcultos();
 
   const view = el('div.view-ajustes.app-container', {}, [
     el('h1.ajustes-titulo', { text: 'Ajustes' }),
@@ -76,6 +78,41 @@ export default async function renderAjustes(root) {
           type: 'button',
           on: { click: importar },
         }, [icon('upload', { size: 18 }), el('span', { text: 'Importar' })]),
+      ]),
+    ]),
+
+    // Aranceles: restaurar ocultos y borrar propios
+    el('section.ajustes-section', {}, [
+      el('div.ajustes-section-title', { text: 'Aranceles' }),
+      ocultos.length > 0 && el('div.ajustes-row', {}, [
+        el('span.label-only', { text: 'Restaurar referenciales ocultos' }),
+        el('button.btn.btn-secondary', {
+          type: 'button',
+          on: { click: () => abrirRestaurarOcultos(root) },
+        }, [el('span', { text: `Restaurar (${ocultos.length})` })]),
+      ]),
+      el('div.ajustes-row', {}, [
+        el('span.label-only', { text: 'Borrar todos mis aranceles propios' }),
+        el('button.btn.btn-danger', {
+          type: 'button',
+          on: { click: () => borrarArancelesPropios(root) },
+        }, [el('span', { text: 'Borrar propios' })]),
+      ]),
+    ]),
+
+    // Indicadores económicos
+    el('section.ajustes-section', {}, [
+      el('div.ajustes-section-title', { text: 'Indicadores económicos' }),
+      el('p.helper', {
+        text: 'Los valores de UF, UTM, dólar y euro se actualizan automáticamente desde el Banco Central cuando hay conexión.',
+        style: { marginBottom: 'var(--space-3)' },
+      }),
+      el('div.ajustes-row', {}, [
+        el('span.label-only', { text: 'Forzar actualización ahora' }),
+        el('button.btn.btn-secondary', {
+          type: 'button',
+          on: { click: forzarRefrescoIndicadores },
+        }, [el('span', { text: 'Actualizar' })]),
       ]),
     ]),
 
@@ -169,7 +206,7 @@ function renderSeccionAvisos() {
       ]),
     ]),
     el('p.helper', {
-      text: 'Después de capturar una audiencia, te abro el menú para que la mandes a tu calendario. Desde ahí decides cómo quieres que te avise.',
+      text: 'Después de capturar una audiencia, te abro Google Calendar con el evento listo. Desde ahí decides cómo quieres que te avise.',
     }),
   ]);
 }
@@ -244,6 +281,71 @@ async function importar() {
   });
 
   fileInput.click();
+}
+
+async function forzarRefrescoIndicadores() {
+  toast('Buscando indicadores…');
+  const res = await refrescarIndicadores(db);
+  if (res.ok) {
+    const fecha = res.datos?.uf?.fecha || hoyISO();
+    toast(`Indicadores actualizados al ${fecha}`);
+  } else {
+    toast(`Sin conexión — ${res.error}`);
+  }
+}
+
+async function abrirRestaurarOcultos(root) {
+  const ocultos = await db.aranceles.listOcultos();
+  if (ocultos.length === 0) {
+    toast('No hay aranceles ocultos');
+    return;
+  }
+  let close;
+  const lista = el('div.huerfanas-lista', {}, ocultos.map((a) =>
+    el('div.huerfanas-fila', {}, [
+      el('span', { text: a.gestion, style: { flex: '1' } }),
+      el('button.btn.btn-ghost', {
+        type: 'button', text: 'Mostrar',
+        on: { click: async () => {
+          await db.aranceles.update(a.id, { ocultoPorUsuario: false });
+          toast('Restaurado');
+          close();
+          renderAjustes(root);
+        } },
+      }),
+    ])
+  ));
+  const content = el('div.stack', {}, [
+    el('div.modal-header', {}, [
+      el('div.modal-title', { text: 'Aranceles ocultos' }),
+      el('button.btn-icon', {
+        type: 'button', aria: { label: 'Cerrar' },
+        on: { click: () => close() },
+      }, [icon('x', { size: 22 })]),
+    ]),
+    lista,
+  ]);
+  close = modal(content, { ariaLabel: 'Restaurar aranceles ocultos' });
+}
+
+async function borrarArancelesPropios(root) {
+  const ok = await confirmar({
+    titulo: 'Borrar todos mis aranceles propios',
+    mensaje: 'Solo se borran los aranceles que tú creaste. Los referenciales del Colegio se conservan.',
+    confirmLabel: 'Borrar propios',
+    destructive: true,
+  });
+  if (!ok) return;
+  const ok2 = await confirmar({
+    titulo: '¿Estás segura?',
+    mensaje: 'Esta acción no se puede deshacer.',
+    confirmLabel: 'Sí, borrar',
+    destructive: true,
+  });
+  if (!ok2) return;
+  const n = await db.aranceles.borrarPropios();
+  toast(n === 0 ? 'No tenías aranceles propios' : `Borrados ${n}`);
+  renderAjustes(root);
 }
 
 async function borrarEjemplosUI(root) {
