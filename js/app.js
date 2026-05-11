@@ -7,6 +7,7 @@ import { applyTheme } from './views/ajustes.js';
 import { openCapturaRapida } from './views/captura-rapida.js';
 import { insertarEjemplosSiVacia } from './lib/datos-ejemplo.js';
 import { avisoDiarioSiCorresponde } from './lib/aviso-diario.js';
+import { mostrarBienvenidaSiPrimerUso } from './lib/bienvenida.js';
 
 const root = document.getElementById('app');
 
@@ -175,6 +176,9 @@ window.addEventListener('hashchange', route);
 
   if (!location.hash) location.hash = '#hoy';
   else route();
+
+  // Modal de bienvenida sobre avisos — una sola vez en la vida de la app.
+  setTimeout(() => { try { mostrarBienvenidaSiPrimerUso(); } catch (e) {} }, 600);
 
   // Aviso local diario (silencioso si no corresponde).
   // Se intenta una sola vez por día y solo si ya hay permiso.
