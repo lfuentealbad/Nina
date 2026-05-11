@@ -236,14 +236,26 @@ export default async function renderTareaForm(root, { id } = {}) {
       causaId: causaInput.value.trim() ? causaIdSel : null,
     };
 
+    let creada;
     if (editing) {
-      await db.tareas.update(id, data);
+      creada = await db.tareas.update(id, data);
       toast('Tarea actualizada');
     } else {
-      await db.tareas.create(data);
+      creada = await db.tareas.create(data);
       toast('Tarea creada');
       ofrecerBorrarEjemplosSiPrimerRegistroPropio(db, toast);
     }
+    if (debeAutoEnviarseACalendario(creada)) {
+      const causa = creada.causaId ? await db.causas.get(creada.causaId) : null;
+      despacharACalendario(creada, causa, toast);
+    }
     location.hash = backHref;
   }
+}
+
+function debeAutoEnviarseACalendario(tarea) {
+  return localStorage.getItem('auto-calendario') === '1'
+    && tarea.tipo === 'audiencia'
+    && !!tarea.fechaVencimiento
+    && !!tarea.horaVencimiento;
 }

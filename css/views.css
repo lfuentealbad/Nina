@@ -480,15 +480,13 @@
   padding-top: var(--space-7);
   padding-bottom: var(--space-9);
 }
-.ajustes-display {
-  font-family: var(--font-display);
-  font-style: italic;
-  font-weight: 400;
-  font-size: var(--text-3xl);
-  letter-spacing: var(--tracking-tight);
-  margin-bottom: var(--space-7);
+.ajustes-titulo {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+  letter-spacing: 0;
+  margin-bottom: var(--space-6);
 }
-.ajustes-display::after { content: "."; color: var(--accent-primary); }
 
 .ajustes-section { margin-bottom: var(--space-7); }
 .ajustes-section-title {

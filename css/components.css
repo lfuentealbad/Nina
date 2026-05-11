@@ -901,6 +901,55 @@ details.collapsible > .body { padding-top: var(--space-4); }
   font-weight: var(--weight-semibold);
 }
 
+/* ===== Toggle switch (Avisos) ===== */
+.toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  width: 100%;
+  cursor: pointer;
+  min-height: var(--touch-min);
+}
+.toggle-label {
+  flex: 1;
+  font-size: var(--text-base);
+  color: var(--text-primary);
+}
+.toggle-switch {
+  position: relative;
+  flex-shrink: 0;
+  display: inline-block;
+  width: 44px;
+  height: 26px;
+}
+.toggle-switch input {
+  position: absolute;
+  opacity: 0;
+  width: 0; height: 0;
+  margin: 0; padding: 0;
+}
+.toggle-track {
+  position: absolute;
+  inset: 0;
+  background: var(--border-strong);
+  border-radius: var(--radius-pill);
+  transition: background var(--duration-micro);
+}
+.toggle-track::before {
+  content: "";
+  position: absolute;
+  top: 3px; left: 3px;
+  width: 20px; height: 20px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform var(--duration-micro) var(--ease-out);
+  box-shadow: var(--shadow-sm);
+}
+.toggle-switch input:checked ~ .toggle-track { background: var(--accent-primary); }
+.toggle-switch input:checked ~ .toggle-track::before { transform: translateX(18px); }
+.toggle-switch input:disabled ~ .toggle-track { opacity: 0.5; cursor: not-allowed; }
+
 /* ===== Sugeridor de tareas huérfanas ===== */
 .huerfanas-lista {
   display: flex;

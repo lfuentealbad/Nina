@@ -9,6 +9,7 @@ import { hoyISO, formatoCorto } from '../lib/fechas.js';
 import { icon } from '../lib/icons.js';
 import { parsearCaptura } from '../lib/parser.js';
 import { ofrecerBorrarEjemplosSiPrimerRegistroPropio } from '../lib/datos-ejemplo.js';
+import { despacharACalendario } from '../lib/calendar.js';
 
 const ETIQUETAS_TIPO = {
   audiencia: 'audiencia',
@@ -145,13 +146,24 @@ export async function openCapturaRapida() {
       fechaVencimiento: estado.fechaVencimiento,
       horaVencimiento: estado.horaVencimiento,
     };
-    await db.tareas.create(data);
+    const creada = await db.tareas.create(data);
     close();
     toast(estado.fechaVencimiento ? 'Tarea guardada' : 'Anotada en bandeja de entrada');
     ofrecerBorrarEjemplosSiPrimerRegistroPropio(db, toast);
-    // Refrescar vista actual si es Hoy o lista.
+    // Auto-calendario: si está activado y es una audiencia con fecha y hora.
+    if (debeAutoEnviarseACalendario(creada)) {
+      const causa = creada.causaId ? await db.causas.get(creada.causaId) : null;
+      despacharACalendario(creada, causa, toast);
+    }
     window.dispatchEvent(new HashChangeEvent('hashchange'));
   }
+}
+
+function debeAutoEnviarseACalendario(tarea) {
+  return localStorage.getItem('auto-calendario') === '1'
+    && tarea.tipo === 'audiencia'
+    && !!tarea.fechaVencimiento
+    && !!tarea.horaVencimiento;
 }
 
 function chip(icono, texto, onRemove) {
