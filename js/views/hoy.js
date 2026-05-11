@@ -6,8 +6,12 @@ import { el, mount, toast } from '../lib/render.js';
 import { icon } from '../lib/icons.js';
 import { hoyISO, toISO, formatoLargo, semaforo, saludoPorHora } from '../lib/fechas.js';
 import { fraseDelDia } from '../lib/saludo.js';
+import { reprogramarSilencioso } from '../lib/reprogramar.js';
 
 export default async function renderHoy(root) {
+  // Mueve pendientes de ayer a hoy (silencioso) antes de elegir el foco.
+  await reprogramarSilencioso();
+
   const nombre = localStorage.getItem('nombre') || 'Nina';
   const saludo = `${saludoPorHora()}, ${nombre}`;
 
