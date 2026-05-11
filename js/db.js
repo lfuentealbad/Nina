@@ -73,7 +73,7 @@ function openDb() {
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
-    req.onblocked = () => reject(new Error('DB blocked: cierra otras pestañas con Nina abierta'));
+    req.onblocked = () => reject(new Error('Base de datos bloqueada: cierra las otras pestañas abiertas'));
   });
   return dbPromise;
 }

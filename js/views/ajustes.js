@@ -165,7 +165,7 @@ function renderSeccionAvisos() {
         } else if (permiso === 'default') {
           const r = await Notification.requestPermission();
           target.checked = r === 'granted';
-          if (r === 'granted') toast('Listo, te avisaré una vez al día cuando abras Nina.');
+          if (r === 'granted') toast('Listo, te avisaré una vez al día cuando abras la app.');
           else target.disabled = (r === 'denied');
         }
       },
@@ -174,7 +174,7 @@ function renderSeccionAvisos() {
 
   const textoAvisos = permiso === 'denied'
     ? 'Bloqueaste los avisos en este navegador. Cámbialo en la configuración del navegador para reactivar.'
-    : 'Una vez al día, cuando abras Nina, te recuerdo lo que tienes hoy. Nunca más de una vez.';
+    : 'Una vez al día, cuando abras la app, te recuerdo lo que tienes hoy. Nunca más de una vez.';
 
   // Toggle 2: auto-calendario
   const toggleAutoCal = el('input', {
@@ -193,7 +193,7 @@ function renderSeccionAvisos() {
 
     el('div.ajustes-row', {}, [
       el('label.toggle', {}, [
-        el('span.toggle-label', { text: 'Avisos del navegador al abrir Nina' }),
+        el('span.toggle-label', { text: 'Avisos del navegador al abrir la app' }),
         el('span.toggle-switch', {}, [toggleAvisos, el('span.toggle-track')]),
       ]),
     ]),
@@ -260,7 +260,7 @@ async function importar() {
     }
 
     if (!data.causas && !data.tareas && !data.hitos) {
-      toast('Archivo inválido (no es backup de Nina)');
+      toast('Archivo inválido (no es un backup válido)');
       return;
     }
 

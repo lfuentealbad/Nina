@@ -974,6 +974,12 @@ details.collapsible > .body { padding-top: var(--space-4); }
 }
 
 /* ===== Modal de bienvenida ===== */
+.bienvenida-intro {
+  font-size: var(--text-base);
+  color: var(--text-primary);
+  line-height: var(--lh-snug);
+  margin-bottom: var(--space-2);
+}
 .bienvenida-lista {
   margin: 0;
   padding-left: var(--space-5);

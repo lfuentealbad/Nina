@@ -215,15 +215,15 @@ function renderModoTabla(estado, aranceles, indicadores, causas, refrescar) {
       el('div.calc-arancel-meta', { text: `${etiquetaMateria(sel.materia)} · valor base ${sel.monto} ${formatoUnidad(sel.moneda)}` }),
     ]),
     sel.moneda === 'porcentaje'
-      ? renderEntradaPorcentaje(estado, sel, refrescar)
-      : renderEntradaFactor(estado, refrescar),
-    renderResultado(calcular(estado, sel, indicadores), indicadores),
+      ? renderEntradaPorcentaje(estado, sel, indicadores)
+      : renderEntradaFactor(estado, indicadores),
+    renderResultado(calcular(estado, sel, indicadores)),
     renderAsociarCausa(estado, causas, refrescar),
-    renderBotonesAccion(estado, sel, indicadores, refrescar),
+    renderBotonesAccion(estado, sel, indicadores),
   ]);
 }
 
-function renderEntradaPorcentaje(estado, sel, refrescar) {
+function renderEntradaPorcentaje(estado, sel, indicadores) {
   return el('div.field', {}, [
     el('label.label', { text: 'Monto base sobre el que se calcula' }),
     el('div.row', {}, [
@@ -231,11 +231,17 @@ function renderEntradaPorcentaje(estado, sel, refrescar) {
         type: 'number', min: '0', step: '0.01', inputmode: 'decimal',
         value: estado.montoBase || '',
         style: { flex: '2' },
-        on: { input: (e) => { estado.montoBase = Number(e.target.value) || 0; refrescar(); } },
+        on: { input: (e) => {
+          estado.montoBase = Number(e.target.value) || 0;
+          actualizarResultadoLocal(estado, indicadores);
+        } },
       }),
       el('select.select', {
         style: { flex: '1' },
-        on: { change: (e) => { estado.monedaBase = e.target.value; refrescar(); } },
+        on: { change: (e) => {
+          estado.monedaBase = e.target.value;
+          actualizarResultadoLocal(estado, indicadores);
+        } },
       }, [
         ['UF', 'UF'], ['UTM', 'UTM'], ['CLP', 'pesos'],
       ].map(([v, t]) => el('option', { value: v, text: t, selected: estado.monedaBase === v }))),
@@ -244,21 +250,31 @@ function renderEntradaPorcentaje(estado, sel, refrescar) {
   ]);
 }
 
-function renderEntradaFactor(estado, refrescar) {
+function renderEntradaFactor(estado, indicadores) {
+  const slider = el('input.calc-factor-slider', {
+    type: 'range', min: '0.5', max: '3', step: '0.1',
+    value: String(estado.factorComplejidad),
+  });
+  const numero = el('input.input.calc-factor-input.tabular', {
+    type: 'number', min: '0.5', max: '3', step: '0.1', inputmode: 'decimal',
+    value: estado.factorComplejidad.toFixed(1),
+  });
+  slider.addEventListener('input', () => {
+    estado.factorComplejidad = Number(slider.value);
+    numero.value = estado.factorComplejidad.toFixed(1);
+    actualizarResultadoLocal(estado, indicadores);
+  });
+  numero.addEventListener('input', () => {
+    const v = Number(numero.value);
+    if (Number.isFinite(v) && v > 0) {
+      estado.factorComplejidad = v;
+      slider.value = String(v);
+      actualizarResultadoLocal(estado, indicadores);
+    }
+  });
   return el('div.field', {}, [
     el('label.label', { text: 'Factor de complejidad' }),
-    el('div.calc-factor-row', {}, [
-      el('input.calc-factor-slider', {
-        type: 'range', min: '0.5', max: '3', step: '0.1',
-        value: String(estado.factorComplejidad),
-        on: { input: (e) => { estado.factorComplejidad = Number(e.target.value); refrescar(); } },
-      }),
-      el('input.input.calc-factor-input.tabular', {
-        type: 'number', min: '0.5', max: '3', step: '0.1', inputmode: 'decimal',
-        value: estado.factorComplejidad.toFixed(1),
-        on: { input: (e) => { estado.factorComplejidad = Number(e.target.value) || 1; refrescar(); } },
-      }),
-    ]),
+    el('div.calc-factor-row', {}, [slider, numero]),
     el('p.helper', { text: 'Ajusta según complejidad real del caso. 1.0 es el valor referencial.' }),
   ]);
 }
@@ -266,18 +282,15 @@ function renderEntradaFactor(estado, refrescar) {
 // --- Modo "Ingreso libre" ---
 
 function renderModoLibre(estado, indicadores, causas, refrescar) {
-  const sel = {
-    gestion: estado.libreGestion || '(sin nombre)',
-    monto: estado.libreMonto,
-    moneda: estado.libreMoneda,
-    materia: 'otro',
-  };
+  const sel = selDesdeEstado(estado);
+  const esPorcentaje = sel.moneda === 'porcentaje';
+
   return el('div.calc-modo', {}, [
     el('div.field', {}, [
       el('label.label', { text: 'Gestión' }),
       el('input.input', {
-        type: 'text', value: estado.libreGestion,
-        on: { input: (e) => { estado.libreGestion = e.target.value; refrescar(); } },
+        type: 'text', value: estado.libreGestion, autocomplete: 'off',
+        on: { input: (e) => { estado.libreGestion = e.target.value; /* no afecta cálculo */ } },
       }),
     ]),
     el('div.field', {}, [
@@ -287,23 +300,33 @@ function renderModoLibre(estado, indicadores, causas, refrescar) {
           type: 'number', min: '0', step: '0.01', inputmode: 'decimal',
           value: estado.libreMonto || '',
           style: { flex: '2' },
-          on: { input: (e) => { estado.libreMonto = Number(e.target.value) || 0; refrescar(); } },
+          on: { input: (e) => {
+            estado.libreMonto = Number(e.target.value) || 0;
+            actualizarResultadoLocal(estado, indicadores);
+          } },
         }),
         el('select.select', {
           style: { flex: '1' },
-          on: { change: (e) => { estado.libreMoneda = e.target.value; refrescar(); } },
+          on: { change: (e) => {
+            const previo = estado.libreMoneda;
+            estado.libreMoneda = e.target.value;
+            // Cambio entre porcentaje y no-porcentaje cambia la estructura.
+            const cambioEstructura = (previo === 'porcentaje') !== (e.target.value === 'porcentaje');
+            if (cambioEstructura) refrescar();
+            else actualizarResultadoLocal(estado, indicadores);
+          } },
         }, MONEDAS.map(([v, t]) => el('option', { value: v, text: t, selected: estado.libreMoneda === v }))),
       ]),
     ]),
-    sel.moneda === 'porcentaje' && renderEntradaPorcentajeLibre(estado, refrescar),
-    sel.moneda !== 'porcentaje' && renderEntradaFactor(estado, refrescar),
-    renderResultado(calcular(estado, sel, indicadores), indicadores),
+    esPorcentaje && renderEntradaPorcentajeLibre(estado, indicadores),
+    !esPorcentaje && renderEntradaFactor(estado, indicadores),
+    renderResultado(calcular(estado, sel, indicadores)),
     renderAsociarCausa(estado, causas, refrescar),
-    renderBotonesAccion(estado, sel, indicadores, refrescar),
+    renderBotonesAccion(estado, sel, indicadores),
   ]);
 }
 
-function renderEntradaPorcentajeLibre(estado, refrescar) {
+function renderEntradaPorcentajeLibre(estado, indicadores) {
   return el('div.field', {}, [
     el('label.label', { text: 'Monto base sobre el que se calcula' }),
     el('div.row', {}, [
@@ -311,11 +334,17 @@ function renderEntradaPorcentajeLibre(estado, refrescar) {
         type: 'number', min: '0', step: '0.01', inputmode: 'decimal',
         value: estado.montoBase || '',
         style: { flex: '2' },
-        on: { input: (e) => { estado.montoBase = Number(e.target.value) || 0; refrescar(); } },
+        on: { input: (e) => {
+          estado.montoBase = Number(e.target.value) || 0;
+          actualizarResultadoLocal(estado, indicadores);
+        } },
       }),
       el('select.select', {
         style: { flex: '1' },
-        on: { change: (e) => { estado.monedaBase = e.target.value; refrescar(); } },
+        on: { change: (e) => {
+          estado.monedaBase = e.target.value;
+          actualizarResultadoLocal(estado, indicadores);
+        } },
       }, [
         ['UF', 'UF'], ['UTM', 'UTM'], ['CLP', 'pesos'],
       ].map(([v, t]) => el('option', { value: v, text: t, selected: estado.monedaBase === v }))),
@@ -325,14 +354,46 @@ function renderEntradaPorcentajeLibre(estado, refrescar) {
 
 // --- Resultado, asociar y acciones ---
 
-function renderResultado(calculo, indicadores) {
-  if (!calculo) return el('div.calc-resultado-vacio', { text: 'Ingresa un monto para ver el cálculo.' });
+function renderResultado(calculo) {
+  if (!calculo) {
+    return el('div.calc-resultado-vacio', {
+      id: 'calc-resultado-host',
+      text: 'Ingresa un monto para ver el cálculo.',
+    });
+  }
   const { textoUnidad, pesos } = calculo;
-  return el('div.calc-resultado', {}, [
+  return el('div.calc-resultado', { id: 'calc-resultado-host' }, [
     el('div.calc-resultado-eyebrow', { text: 'A cobrar' }),
     el('div.calc-resultado-monto', { text: textoUnidad }),
     pesos !== null && el('div.calc-resultado-pesos', { text: `≈ ${formatoPesos(pesos)}` }),
   ]);
+}
+
+/**
+ * Reconstruye `sel` desde el estado actual sin depender de los nodos del DOM.
+ * Lo usan los handlers de inputs para recalcular el resultado en vivo.
+ */
+function selDesdeEstado(estado) {
+  if (estado.modo === 'tabla') return estado.arancelSeleccionado;
+  return {
+    gestion: estado.libreGestion || '(sin nombre)',
+    monto: estado.libreMonto,
+    moneda: estado.libreMoneda,
+    materia: 'otro',
+  };
+}
+
+/**
+ * Reemplaza el bloque resultado en el DOM sin destruir el resto de la vista.
+ * Mantiene el foco en el input que esté activo.
+ */
+function actualizarResultadoLocal(estado, indicadores) {
+  const host = document.getElementById('calc-resultado-host');
+  if (!host) return;
+  const sel = selDesdeEstado(estado);
+  if (!sel) return;
+  const nuevo = renderResultado(calcular(estado, sel, indicadores));
+  host.replaceWith(nuevo);
 }
 
 function renderAsociarCausa(estado, causas, refrescar) {
@@ -358,20 +419,26 @@ function renderAsociarCausa(estado, causas, refrescar) {
   ]);
 }
 
-function renderBotonesAccion(estado, sel, indicadores, refrescar) {
-  const calculo = calcular(estado, sel, indicadores);
-
+function renderBotonesAccion(estado, sel, indicadores) {
   return el('div.calc-acciones', {}, [
     estado.causaIdAsociada && el('button.btn.btn-secondary.btn-block', {
       type: 'button',
-      disabled: !calculo,
-      on: { click: () => guardarComoHonorarioDeCausa(estado, sel, calculo) },
+      on: { click: () => {
+        const selActual = selDesdeEstado(estado);
+        const calculo = calcular(estado, selActual, indicadores);
+        if (!calculo) { toast('Ingresa un monto primero'); return; }
+        guardarComoHonorarioDeCausa(estado, selActual, calculo);
+      } },
     }, [el('span', { text: 'Guardar como honorario de esta causa' })]),
     el('button.btn.btn-primary.btn-block', {
       type: 'button',
-      disabled: !calculo,
       style: { marginTop: 'var(--space-2)' },
-      on: { click: () => abrirCopiarResumen(sel, calculo) },
+      on: { click: () => {
+        const selActual = selDesdeEstado(estado);
+        const calculo = calcular(estado, selActual, indicadores);
+        if (!calculo) { toast('Ingresa un monto primero'); return; }
+        abrirCopiarResumen(selActual, calculo);
+      } },
     }, [el('span', { text: 'Copiar resumen' })]),
   ]);
 }
