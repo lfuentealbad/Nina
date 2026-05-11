@@ -78,7 +78,7 @@ export default async function renderCalculadora(root) {
         el('p.calc-subtitulo', { text: 'Tabla referencial. Tus ediciones se guardan.' }),
       ]),
       renderBannerIndicadores(indicadoresMapa),
-      renderCalculadora(estado, aranceles, indicadoresMapa, todasCausas, pintarTodo),
+      renderSeccionCalculadora(estado, aranceles, indicadoresMapa, todasCausas, pintarTodo),
       renderTablaSection(estado, aranceles, pintarTodo, indicadoresMapa),
       el('p.calc-disclaimer', {
         text: 'Los montos son referenciales y aproximados. Edítalos según tu propio criterio profesional y tu mercado.',
@@ -120,7 +120,7 @@ function renderBannerIndicadores(mapa) {
 
 // ===== Calculadora =====
 
-function renderCalculadora(estado, aranceles, indicadores, causas, refrescar) {
+function renderSeccionCalculadora(estado, aranceles, indicadores, causas, refrescar) {
   const tabsRow = el('div.calc-tabs', {}, [
     botonTab('Elegir de la tabla', estado.modo === 'tabla', () => {
       estado.modo = 'tabla'; refrescar();
