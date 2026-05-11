@@ -1,9 +1,11 @@
 // Bootstrap + hash router + nav persistente + FAB.
 
+import db from './db.js';
 import { el, mount, toast } from './lib/render.js';
 import { icon } from './lib/icons.js';
 import { applyTheme } from './views/ajustes.js';
 import { openCapturaRapida } from './views/captura-rapida.js';
+import { insertarEjemplosSiVacia } from './lib/datos-ejemplo.js';
 
 const root = document.getElementById('app');
 
@@ -153,9 +155,25 @@ async function route() {
 
 window.addEventListener('hashchange', route);
 
-// Default route
-if (!location.hash) location.hash = '#hoy';
-else route();
+// Bootstrap: cargar ejemplos si la BD está vacía, después rutear.
+(async function bootstrap() {
+  try {
+    const insertaron = await insertarEjemplosSiVacia(db);
+    if (insertaron) {
+      setTimeout(() => {
+        toast(
+          'Te dejé un par de ejemplos para que veas cómo se ve Nina. Borralos cuando quieras desde Ajustes.',
+          { dur: 7000 }
+        );
+      }, 500);
+    }
+  } catch (e) {
+    console.warn('No se pudieron insertar ejemplos:', e);
+  }
+
+  if (!location.hash) location.hash = '#hoy';
+  else route();
+})();
 
 // Escuchar cambio de prefers-color-scheme para refrescar tema cuando está en "sistema".
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {

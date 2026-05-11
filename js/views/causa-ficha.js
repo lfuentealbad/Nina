@@ -67,7 +67,10 @@ export default async function renderFicha(root, { id }) {
     el('div.ficha-eyebrow', {
       text: `${(MATERIA_LABELS[causa.materia] || causa.materia || 'Otro')}${causa.rol ? ' · ' + causa.rol : ''}`,
     }),
-    el('h1.ficha-titulo', { text: causa.caratulado || '(sin caratulado)' }),
+    el('h1.ficha-titulo', {}, [
+      el('span', { text: causa.caratulado || '(sin caratulado)' }),
+      causa.esEjemplo && el('span.badge-ejemplo', { text: 'ejemplo' }),
+    ]),
     causa.tribunal && el('div.ficha-rol', { text: causa.tribunal }),
 
     el('div.ficha-section', {}, [
@@ -268,6 +271,7 @@ function renderTareaItem(t, onChange) {
           class: `tarea-subprogress${subComplete ? ' complete' : ''}`,
           text: `${subDone}/${subTotal}`,
         }),
+        t.esEjemplo && el('span.badge-ejemplo', { text: 'ejemplo' }),
       ]),
       el('div.tarea-meta', {}, [
         sem && el('span', { class: `semaforo ${sem.class}`, text: (sem.label || '').toLowerCase() }),

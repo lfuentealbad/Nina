@@ -105,6 +105,7 @@ const causas = {
       notasHonorarios: '',
       notas: '',
       archivada: false,
+      esEjemplo: false,
       ...data,
       creadaEn: nowTimestamp(),
       actualizadaEn: nowTimestamp(),
@@ -189,6 +190,7 @@ const tareas = {
       completada: false,
       completadaEn: null,
       subtareas: null,    // Array de { titulo, completada, completadaEn } o null
+      esEjemplo: false,
       ...data,
       creadaEn: nowTimestamp(),
     };
@@ -312,6 +314,7 @@ const hitos = {
       fecha: hoyISO(),
       tipo: 'otro',
       descripcion: '',
+      esEjemplo: false,
       ...data,
     };
     await putOne('hitos', hito);
