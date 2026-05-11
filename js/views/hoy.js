@@ -1,109 +1,122 @@
-// Vista Hoy — Editorial calm v2.
-// Una pregunta: "¿qué hago ahora?". Una respuesta: el hero card.
-// Todo lo demás es soporte secundario, no compite por atención.
+// Vista Hoy — minimalista. Una sola tarjeta de foco con banda lateral del semáforo.
+// Nada de listas largas inline, quick actions ni link de bandeja al pie.
 
 import db from '../db.js';
 import { el, mount, toast } from '../lib/render.js';
 import { icon } from '../lib/icons.js';
-import { illustration } from '../lib/illustrations.js';
-import { hoyISO, formatoLargo, semaforo, saludoPorHora } from '../lib/fechas.js';
-import { openAccionesMenu, openRevisionDelDia } from './tarea-actions.js';
+import { hoyISO, toISO, formatoLargo, semaforo, saludoPorHora } from '../lib/fechas.js';
 
 export default async function renderHoy(root) {
-  const [audiencias, plazos, inbox] = await Promise.all([
-    db.tareas.audienciasToday(),
-    db.tareas.plazosHoyManana(),
-    db.tareas.inbox(),
-  ]);
-
-  const excludeIds = [...audiencias, ...plazos].map((t) => t.id);
-  const microtareas = await db.tareas.nextMicrotasks(3, excludeIds);
-
-  // Combinar plazos + microtareas en una sola lista — "una pregunta por pantalla".
-  const porHacer = [...plazos, ...microtareas];
-
-  const proximo = await pickProximo(audiencias, plazos);
   const nombre = localStorage.getItem('nombre') || 'Nina';
+  const saludo = `${saludoPorHora()}, ${nombre}`;
 
-  // Mostrar "Revisar día" si hay pendientes hoy y son después de las 16:00 (señal del fin de jornada)
-  const hour = new Date().getHours();
-  const planeadasHoy = await db.tareas.dueToday();
-  const showRevisarDia = hour >= 16 && planeadasHoy.length > 0;
+  const foco = await elegirFoco();
+  const pendientesProx = await pendientesProximosDosDias(foco?.tarea?.id);
 
-  const view = el('div.view-hoy.app-container', {}, [
-    // Hero: "hoy."
-    el('header.hoy-hero', {}, [
-      el('h1.hoy-display', { text: 'hoy' }),
+  const view = el('div.view-hoy.app-container', { id: 'hoy-view' }, [
+    el('header.hoy-encabezado', {}, [
+      el('h1.hoy-saludo', { text: saludo }),
       el('p.hoy-fecha', { text: formatoLargo(hoyISO()) }),
-      showRevisarDia && el('div', { style: { marginTop: 'var(--space-4)' } }, [
-        el('button.daily-review-cta', {
-          type: 'button',
-          on: { click: () => openRevisionDelDia(() => refresh()) },
-        }, [icon('moon', { size: 16 }), el('span', { text: 'Revisar día' })]),
-      ]),
     ]),
 
-    // Hero card — la respuesta principal
-    proximo && renderProximo(proximo),
-
-    // Quick action discreta — para crear tarea con fecha sin pasar por bandeja
-    renderQuickActions(),
-
-    // Lista única "Más por hacer" — combina plazos + microtareas
-    porHacer.length > 0
-      ? renderPorHacer(porHacer, () => refresh())
-      : renderEmptyDay(),
-
-    // Bandeja al pie
-    inbox.length > 0 && renderInboxLink(inbox.length),
+    foco
+      ? el('div', { id: 'hoy-foco-wrap' }, [
+          renderTarjetaFoco(foco, () => refresh()),
+          pendientesProx > 0 && el('a.hoy-ver-mas', {
+            href: '#hoy/todas',
+            text: `Ver ${pendientesProx} ${pendientesProx === 1 ? 'pendiente más' : 'pendientes más'} →`,
+          }),
+        ])
+      : renderEmptyState(),
   ]);
 
   mount(root, view);
+
   function refresh() { renderHoy(root); }
 }
 
-// Selecciona el "siguiente" más relevante.
-async function pickProximo(audiencias, plazos) {
+// ===== Selección del foco =====
+
+async function elegirFoco() {
+  const hoy = hoyISO();
+  const all = await db.tareas.list();
+  const activas = all.filter((t) => !t.completada && !t.vencida);
+
   const now = new Date();
   const nowMin = now.getHours() * 60 + now.getMinutes();
 
-  const audienciasFuturas = audiencias
-    .filter((a) => {
-      if (!a.horaVencimiento) return false;
-      const [h, m] = a.horaVencimiento.split(':').map(Number);
+  // 1. Audiencia hoy con hora futura
+  const audienciasHoy = activas
+    .filter((t) => t.tipo === 'audiencia' && t.fechaVencimiento === hoy && t.horaVencimiento)
+    .filter((t) => {
+      const [h, m] = t.horaVencimiento.split(':').map(Number);
       return (h * 60 + m) >= nowMin;
     })
-    .sort((a, b) => (a.horaVencimiento || '').localeCompare(b.horaVencimiento || ''));
+    .sort((a, b) => a.horaVencimiento.localeCompare(b.horaVencimiento));
+  if (audienciasHoy[0]) return await empacar(audienciasHoy[0]);
 
-  if (audienciasFuturas[0]) {
-    const causa = audienciasFuturas[0].causaId
-      ? await db.causas.get(audienciasFuturas[0].causaId)
-      : null;
-    return { tipo: 'audiencia', tarea: audienciasFuturas[0], causa };
-  }
+  // 2. Plazo (no audiencia) hoy
+  const plazosHoy = activas
+    .filter((t) => t.tipo !== 'audiencia' && t.fechaVencimiento === hoy)
+    .sort(porFechaHora);
+  if (plazosHoy[0]) return await empacar(plazosHoy[0]);
 
-  const plazoHoy = plazos.find((t) => t.fechaVencimiento === hoyISO());
-  if (plazoHoy) {
-    const causa = plazoHoy.causaId ? await db.causas.get(plazoHoy.causaId) : null;
-    return { tipo: 'plazo', tarea: plazoHoy, causa };
-  }
+  // 3. Plazo (no audiencia) mañana
+  const manana = isoDelta(1);
+  const plazosManana = activas
+    .filter((t) => t.tipo !== 'audiencia' && t.fechaVencimiento === manana)
+    .sort(porFechaHora);
+  if (plazosManana[0]) return await empacar(plazosManana[0]);
+
+  // 4. Audiencia o plazo en próximos 7 días
+  const tope = isoDelta(7);
+  const proximos = activas
+    .filter((t) => t.fechaVencimiento && t.fechaVencimiento > hoy && t.fechaVencimiento <= tope)
+    .sort(porFechaHora);
+  if (proximos[0]) return await empacar(proximos[0]);
 
   return null;
 }
 
-function renderProximo({ tipo, tarea, causa }) {
-  const isAudiencia = tipo === 'audiencia';
-  const eyebrow = isAudiencia ? 'Próxima audiencia' : 'Hoy';
+async function empacar(tarea) {
+  const causa = tarea.causaId ? await db.causas.get(tarea.causaId) : null;
+  return { tarea, causa, sem: semaforo(tarea.fechaVencimiento) };
+}
 
+async function pendientesProximosDosDias(excluirId) {
+  const hoy = hoyISO();
+  const limite = isoDelta(2);
+  const all = await db.tareas.list();
+  return all.filter((t) =>
+    !t.completada &&
+    !t.vencida &&
+    t.fechaVencimiento &&
+    t.fechaVencimiento >= hoy &&
+    t.fechaVencimiento <= limite &&
+    t.id !== excluirId
+  ).length;
+}
+
+// ===== Tarjeta de foco =====
+
+function renderTarjetaFoco({ tarea, causa, sem }, onChange) {
   const meta = causa
-    ? `${causa.caratulado || causa.rol || ''}${causa.tribunal ? ' · ' + causa.tribunal : ''}`
+    ? [causa.caratulado, causa.tribunal].filter(Boolean).join(' · ')
     : '';
 
-  return el('section.hoy-next', {
-    role: 'button',
+  const eyebrowText = (sem?.label || '').toUpperCase();
+  const semClass = sem?.class || '';
+
+  return el('article.hoy-foco', {
+    class: `hoy-foco ${semClass}`,
+    role: causa ? 'button' : null,
     tabindex: causa ? '0' : null,
+    aria: causa ? { label: `Abrir causa ${causa.caratulado || ''}` } : {},
     on: causa ? {
-      click: () => { location.hash = `#causas/${causa.id}`; },
+      click: (e) => {
+        if (e.target.closest('.hoy-foco-completar')) return;
+        location.hash = `#causas/${causa.id}`;
+      },
       keydown: (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
@@ -112,103 +125,52 @@ function renderProximo({ tipo, tarea, causa }) {
       },
     } : {},
   }, [
-    el('div.hoy-next-eyebrow', { text: eyebrow }),
-    // Hora prominente solo para audiencias. Para plazos hoy, omitir (eyebrow ya dice "Hoy").
-    isAudiencia && el('div.hoy-next-hora.tabular', { text: tarea.horaVencimiento || '—' }),
-    el('div.hoy-next-titulo', {}, [
-      el('span', { text: tarea.titulo }),
-      tarea.esEjemplo && el('span.badge-ejemplo', { text: 'ejemplo' }),
+    el('div.hoy-foco-cuerpo', {}, [
+      eyebrowText && el('div.hoy-foco-eyebrow', { text: eyebrowText }),
+      tarea.horaVencimiento && el('div.hoy-foco-hora.tabular', { text: tarea.horaVencimiento }),
+      el('div.hoy-foco-titulo', {}, [
+        el('span', { text: tarea.titulo }),
+        tarea.esEjemplo && el('span.badge-ejemplo', { text: 'ejemplo' }),
+      ]),
+      meta && el('div.hoy-foco-meta', { text: meta }),
     ]),
-    meta && el('div.hoy-next-meta', { text: meta }),
-  ]);
-}
-
-// Quick actions visibles — reduce activation energy para crear tareas con fecha
-function renderQuickActions() {
-  return el('div.hoy-quick', {}, [
-    el('a.hoy-quick-link', { href: '#tareas/nueva' }, [
-      icon('plus', { size: 16 }),
-      el('span', { text: 'Tarea con fecha' }),
-    ]),
-    el('a.hoy-quick-link', { href: '#causas/nueva' }, [
-      icon('folder', { size: 16 }),
-      el('span', { text: 'Nueva causa' }),
-    ]),
-  ]);
-}
-
-function renderPorHacer(tareas, onChange) {
-  return el('section.hoy-section', {}, [
-    el('h2.hoy-section-eyebrow', { text: 'Más por hacer' }),
-    el('div', {}, tareas.map((t) => renderTareaRow(t, onChange))),
-  ]);
-}
-
-function renderEmptyDay() {
-  return el('section.hoy-section', {}, [
-    el('div.empty-state', {}, [
-      illustration('sun'),
-      el('p.empty-message', { text: 'vas al día' }),
-      el('a', {
-        class: 'btn btn-secondary',
-        href: '#causas',
-        text: 'Revisar causas',
-      }),
-    ]),
-  ]);
-}
-
-function renderTareaRow(t, onChange) {
-  const sem = t.fechaVencimiento ? semaforo(t.fechaVencimiento) : null;
-  const tieneSubs = Array.isArray(t.subtareas) && t.subtareas.length > 0;
-  const subDone = tieneSubs ? t.subtareas.filter((s) => s.completada).length : 0;
-  const subTotal = tieneSubs ? t.subtareas.length : 0;
-  const subComplete = tieneSubs && subDone === subTotal;
-
-  return el('article.tarea-row', {}, [
-    el('button.tarea-checkbox', {
+    el('button.hoy-foco-completar', {
       type: 'button',
-      aria: { label: `Marcar "${t.titulo}" como completada` },
-      on: { click: (e) => completar(t, e.currentTarget.closest('.tarea-row'), onChange) },
+      aria: { label: `Marcar "${tarea.titulo}" como completada` },
+      on: { click: (e) => { e.stopPropagation(); completar(tarea, onChange); } },
+    }, [icon('check', { size: 22 })]),
+  ]);
+}
+
+// ===== Empty state =====
+// El set rotativo de frases llega en el commit siguiente.
+function renderEmptyState() {
+  return el('section.hoy-empty', {}, [
+    el('p.hoy-empty-frase', {
+      text: 'Sin urgencias por delante. Buen momento para mirar las causas con calma.',
     }),
-    el('div.tarea-content', {}, [
-      el('div.tarea-titulo', {}, [
-        el('span', { text: t.titulo }),
-        tieneSubs && el('span', {
-          class: `tarea-subprogress${subComplete ? ' complete' : ''}`,
-          text: `${subDone}/${subTotal}`,
-        }),
-        t.esEjemplo && el('span.badge-ejemplo', { text: 'ejemplo' }),
-      ]),
-      el('div.tarea-meta', {}, [
-        sem && el('span', { class: `semaforo ${sem.class}`, text: sem.label.toLowerCase() }),
-        t.horaVencimiento && el('span.tabular', { text: t.horaVencimiento }),
-      ]),
-    ]),
-    el('button.tarea-actions', {
-      type: 'button',
-      aria: { label: `Más acciones para "${t.titulo}"` },
-      on: { click: (e) => { e.stopPropagation(); openAccionesMenu(t.id, onChange, e.currentTarget); } },
-    }, [icon('moreVertical', { size: 18 })]),
+    el('a.btn.btn-secondary', { href: '#hoy/todas', text: 'Capturar algo' }),
   ]);
 }
 
-function renderInboxLink(count) {
-  return el('button.inbox-link', {
-    type: 'button',
-    aria: { label: `Bandeja de entrada: ${count} sin fecha` },
-    on: { click: () => openInboxModal() },
-  }, [
-    el('span', { text: 'En tu bandeja:' }),
-    el('span.count.tabular', { text: String(count) }),
-    el('span', { text: count === 1 ? 'tarea sin fecha →' : 'tareas sin fecha →' }),
-  ]);
+// ===== Helpers =====
+
+function porFechaHora(a, b) {
+  const af = a.fechaVencimiento || '9999-12-31';
+  const bf = b.fechaVencimiento || '9999-12-31';
+  if (af !== bf) return af.localeCompare(bf);
+  return (a.horaVencimiento || '99:99').localeCompare(b.horaVencimiento || '99:99');
 }
 
-async function completar(tarea, cardNode, onChange) {
-  if (cardNode) cardNode.classList.add('completing');
+function isoDelta(days) {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return toISO(d);
+}
+
+async function completar(tarea, onChange) {
   await db.tareas.complete(tarea.id, true);
-  toast(`"${truncate(tarea.titulo, 40)}" completada`, {
+  toast(`"${truncar(tarea.titulo, 40)}" completada`, {
     dur: 5000,
     action: {
       label: 'Deshacer',
@@ -218,9 +180,4 @@ async function completar(tarea, cardNode, onChange) {
   setTimeout(onChange, 280);
 }
 
-function truncate(s, n) { return s.length > n ? s.slice(0, n - 1) + '…' : s; }
-
-async function openInboxModal() {
-  const { openInboxRevision } = await import('./captura-rapida.js');
-  openInboxRevision();
-}
+function truncar(s, n) { return s.length > n ? s.slice(0, n - 1) + '…' : s; }
