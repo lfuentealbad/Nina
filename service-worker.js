@@ -19,7 +19,15 @@ const SHELL = [
   BASE + 'js/lib/render.js',
   BASE + 'js/lib/icons.js',
   BASE + 'js/lib/illustrations.js',
+  BASE + 'js/lib/datos-ejemplo.js',
+  BASE + 'js/lib/saludo.js',
+  BASE + 'js/lib/parser.js',
+  BASE + 'js/lib/calendar.js',
+  BASE + 'js/lib/reprogramar.js',
+  BASE + 'js/lib/aviso-diario.js',
+  BASE + 'js/lib/bienvenida.js',
   BASE + 'js/views/hoy.js',
+  BASE + 'js/views/hoy-todas.js',
   BASE + 'js/views/causas-lista.js',
   BASE + 'js/views/causa-ficha.js',
   BASE + 'js/views/causa-form.js',
@@ -27,7 +35,6 @@ const SHELL = [
   BASE + 'js/views/captura-rapida.js',
   BASE + 'js/views/ajustes.js',
   BASE + 'js/views/tarea-actions.js',
-  BASE + 'js/lib/datos-ejemplo.js',
   BASE + 'icons/app-icon.svg',
 ];
 
