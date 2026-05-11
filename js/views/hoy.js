@@ -5,6 +5,7 @@ import db from '../db.js';
 import { el, mount, toast } from '../lib/render.js';
 import { icon } from '../lib/icons.js';
 import { hoyISO, toISO, formatoLargo, semaforo, saludoPorHora } from '../lib/fechas.js';
+import { fraseDelDia } from '../lib/saludo.js';
 
 export default async function renderHoy(root) {
   const nombre = localStorage.getItem('nombre') || 'Nina';
@@ -143,13 +144,13 @@ function renderTarjetaFoco({ tarea, causa, sem }, onChange) {
 }
 
 // ===== Empty state =====
-// El set rotativo de frases llega en el commit siguiente.
 function renderEmptyState() {
   return el('section.hoy-empty', {}, [
-    el('p.hoy-empty-frase', {
-      text: 'Sin urgencias por delante. Buen momento para mirar las causas con calma.',
-    }),
-    el('a.btn.btn-secondary', { href: '#hoy/todas', text: 'Capturar algo' }),
+    el('p.hoy-empty-frase', { text: fraseDelDia(hoyISO()) }),
+    el('button.btn.btn-secondary', {
+      type: 'button',
+      on: { click: () => import('./captura-rapida.js').then((m) => m.openCapturaRapida()) },
+    }, [el('span', { text: 'Capturar algo' })]),
   ]);
 }
 
