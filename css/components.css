@@ -1106,6 +1106,16 @@ details.collapsible > .body { padding-top: var(--space-4); }
   margin-top: 2px;
 }
 
+/* ===== Nudge desde captura rápida ===== */
+.captura-nudge {
+  display: block;
+  text-align: center;
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+  padding: var(--space-3) 0;
+}
+.captura-nudge:hover { color: var(--accent-primary); }
+
 /* ===== Chips del parser de captura ===== */
 .captura-chips {
   display: flex;

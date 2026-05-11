@@ -53,6 +53,12 @@ export async function openCapturaRapida() {
   });
 
   const chipsRow = el('div.captura-chips');
+  const nudgeAranceles = el('a.captura-nudge', {
+    href: '#calculadora',
+    text: '¿Quieres calcular honorarios? Ir a la calculadora →',
+    hidden: true,
+    on: { click: () => close() },
+  });
 
   const causaSelect = el('select.select', {
     aria: { label: 'Causa relacionada (opcional)' },
@@ -86,6 +92,7 @@ export async function openCapturaRapida() {
       type: 'submit', text: 'Guardar',
       style: { marginTop: 'var(--space-3)' },
     }),
+    nudgeAranceles,
   ]);
 
   close = modal(content, { ariaLabel: 'Captura rápida' });
@@ -98,6 +105,7 @@ export async function openCapturaRapida() {
       estado.horaVencimiento = null;
       estado.tipo = 'gestion';
       renderChips();
+      actualizarNudge('');
       return;
     }
     const parsed = parsearCaptura(raw);
@@ -106,6 +114,11 @@ export async function openCapturaRapida() {
     estado.horaVencimiento = parsed.horaVencimiento;
     estado.tipo = parsed.tipo;
     renderChips();
+    actualizarNudge(raw);
+  }
+
+  function actualizarNudge(texto) {
+    nudgeAranceles.hidden = !mencionaHonorarios(texto);
   }
 
   function renderChips() {
@@ -164,6 +177,15 @@ function debeAutoEnviarseACalendario(tarea) {
     && tarea.tipo === 'audiencia'
     && !!tarea.fechaVencimiento
     && !!tarea.horaVencimiento;
+}
+
+// Detecta si el texto menciona honorarios. Word-boundary para "UF" y "UTM";
+// "$" matchea cuando viene pegado a número ("$500.000").
+const REGEX_HONORARIOS = /\b(cobrar|honorarios|pesos|UF|UTM)\b|\$\d/i;
+
+function mencionaHonorarios(s) {
+  if (!s) return false;
+  return REGEX_HONORARIOS.test(s);
 }
 
 function chip(icono, texto, onRemove) {
