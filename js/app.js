@@ -6,6 +6,8 @@ import { icon } from './lib/icons.js';
 import { applyTheme } from './views/ajustes.js';
 import { openCapturaRapida } from './views/captura-rapida.js';
 import { insertarEjemplosSiVacia } from './lib/datos-ejemplo.js';
+import { avisoDiarioSiCorresponde } from './lib/aviso-diario.js';
+import { mostrarBienvenidaSiPrimerUso } from './lib/bienvenida.js';
 
 const root = document.getElementById('app');
 
@@ -61,7 +63,7 @@ function renderNav(currentHash) {
   sidebarEl.replaceChildren();
   sidebarEl.appendChild(el('div.sidebar-brand', {}, [
     el('span.brand-dot', { aria: { hidden: 'true' } }),
-    el('span', { text: 'Carolina' }),
+    el('span', { text: 'Nina' }),
   ]));
 
   // Botón Capturar (reemplaza al FAB en desktop)
@@ -91,7 +93,7 @@ function renderNav(currentHash) {
       aria: { current: isActive ? 'page' : 'false' },
     }, [icon(item.iconName, { size: 18 }), el('span', { text: item.label })]));
   }
-  sidebarEl.appendChild(el('div.sidebar-version', { text: 'Carolina v1.5' }));
+  // Versión oculta de la UI; disponible en window.NINA_VERSION para debug.
 }
 
 function matchesNav(current, navHash) {
@@ -108,6 +110,7 @@ fabEl.addEventListener('click', () => openCapturaRapida());
 // ===== Router =====
 const ROUTES = [
   { pattern: /^#?$|^#hoy$/,                    view: () => import('./views/hoy.js'),         params: () => ({}),                showFab: true,  showNav: true },
+  { pattern: /^#hoy\/todas$/,                  view: () => import('./views/hoy-todas.js'),   params: () => ({}),                showFab: true,  showNav: true },
   { pattern: /^#causas\/nueva$/,               view: () => import('./views/causa-form.js'),  params: () => ({}),                showFab: false, showNav: true },
   { pattern: /^#causas\/([^/]+)\/editar$/,     view: () => import('./views/causa-form.js'),  params: (m) => ({ id: m[1] }),     showFab: false, showNav: true },
   { pattern: /^#causas\/([^/]+)$/,             view: () => import('./views/causa-ficha.js'), params: (m) => ({ id: m[1] }),     showFab: true,  showNav: true },
@@ -173,6 +176,13 @@ window.addEventListener('hashchange', route);
 
   if (!location.hash) location.hash = '#hoy';
   else route();
+
+  // Modal de bienvenida sobre avisos — una sola vez en la vida de la app.
+  setTimeout(() => { try { mostrarBienvenidaSiPrimerUso(); } catch (e) {} }, 600);
+
+  // Aviso local diario (silencioso si no corresponde).
+  // Se intenta una sola vez por día y solo si ya hay permiso.
+  setTimeout(() => { avisoDiarioSiCorresponde().catch(() => {}); }, 1000);
 })();
 
 // Escuchar cambio de prefers-color-scheme para refrescar tema cuando está en "sistema".

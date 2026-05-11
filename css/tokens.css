@@ -1,78 +1,74 @@
-/* Design tokens — Editorial calm.
-   Pensar Carolina como un cuaderno legal cuidadosamente tipografiado, no como un dashboard.
-   Inspiración: Things 3 (precisión) + Sunsama (calma) + papel real (calidez). */
+/* Design tokens — Nina, paleta clara y limpia.
+   Superficies luminosas, mucho aire, tipografía del sistema.
+   Inspiración: Things 3, Linear. */
 
 :root {
-  /* ===== Superficies — papel cálido ===== */
-  --surface-bg: #F4F0E8;            /* cream warm como papel envejecido suavemente */
-  --surface-card: #FBF8F1;          /* página */
+  /* ===== Superficies ===== */
+  --surface-bg: #FAFAF7;
+  --surface-card: #FFFFFF;
   --surface-elevated: #FFFFFF;
-  --surface-muted: #ECE6D9;         /* hover/inactive */
+  --surface-muted: #F0EFE9;
   --surface-overlay: rgba(28, 31, 26, 0.45);
-  --surface-grain: rgba(28, 31, 26, 0.025);
+  --surface-grain: rgba(28, 31, 26, 0);
 
-  /* ===== Texto — ink, no negro puro ===== */
-  --text-primary: #1C1F1A;          /* tinta verde-oscuro casi imperceptible */
-  --text-secondary: #5C6055;
-  --text-tertiary: #7B7F70;          /* AA pleno sobre cream — eyebrows uppercase pequeños */
-  --text-on-accent: #FBF8F1;
+  /* ===== Texto ===== */
+  --text-primary: #1C1F1A;
+  --text-secondary: #666B62;
+  --text-tertiary: #8B8F84;
+  --text-on-accent: #FFFFFF;
 
-  /* ===== Marca — sage refinado ===== */
-  --accent-primary: #5A7560;        /* sage más profundo, menos celeste */
+  /* ===== Marca sage ===== */
+  --accent-primary: #5A7560;
   --accent-primary-hover: #486049;
-  --accent-soft: #DCE2D2;           /* hover bg */
-  --accent-paper: #E5E9D9;          /* surface variant cuando se necesita un toque */
+  --accent-soft: #E5EBDF;
+  --accent-paper: #EEF2E8;
 
-  /* ===== Status — semáforo TDA-friendly ===== */
+  /* ===== Semáforo (≥ 4.5:1 sobre surface-card) ===== */
   --status-ok: #5A7560;
-  --status-warn: #A87E3A;            /* ámbar oscurecido a 4.5:1 sobre cream */
-  --status-urgent: #A85547;          /* terracota, no rojo */
+  --status-warn: #B98A3D;
+  --status-urgent: #C25A45;
   --status-completed: #B8B8AB;
 
-  /* ===== Bordes — apenas perceptibles ===== */
-  --border-subtle: #E0DACD;
-  --border-strong: #C7C0AE;
-  --border-divider: #D4CDB9;        /* línea horizontal de cuaderno */
+  /* ===== Bordes ===== */
+  --border-subtle: #E6E5DF;
+  --border-strong: #CFCEC6;
+  --border-divider: #DAD9D2;
 
-  /* ===== Sombras — muy sutiles, papel sobre papel ===== */
-  --shadow-sm: 0 1px 2px rgba(28, 31, 26, 0.03);
-  --shadow-md: 0 4px 14px rgba(28, 31, 26, 0.04);
-  --shadow-lg: 0 12px 36px rgba(28, 31, 26, 0.08);
+  /* ===== Sombras ===== */
+  --shadow-sm: 0 1px 2px rgba(28, 31, 26, 0.04);
+  --shadow-md: 0 4px 14px rgba(28, 31, 26, 0.06);
+  --shadow-lg: 0 12px 36px rgba(28, 31, 26, 0.10);
 
-  /* ===== Tipografía dual ===== */
-  --font-sans: "InterVariable", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-  --font-display: "Newsreader", Georgia, Cambria, "Times New Roman", serif;
+  /* ===== Tipografía: stack del sistema ===== */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display: Georgia, Cambria, "Times New Roman", serif;
   --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Consolas, "Courier New", monospace;
 
-  /* Escala — basada en perfect fourth (1.333) para rythm musical */
-  --text-xs: 0.75rem;       /* 12 */
-  --text-sm: 0.8125rem;     /* 13 */
-  --text-base: 1rem;        /* 16 */
-  --text-lg: 1.1875rem;     /* 19 */
-  --text-xl: 1.5rem;        /* 24 */
-  --text-2xl: 2rem;         /* 32 */
-  --text-3xl: 2.75rem;      /* 44 — hero serif */
-  --text-4xl: 4rem;         /* 64 — display max */
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 1rem;
+  --text-lg: 1.1875rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 2rem;
+  --text-3xl: 2.75rem;
+  --text-4xl: 4rem;
 
-  /* Pesos */
   --weight-regular: 400;
   --weight-medium: 500;
   --weight-semibold: 600;
   --weight-bold: 700;
 
-  /* Line-height */
   --lh-tight: 1.1;
   --lh-snug: 1.3;
   --lh-body: 1.6;
   --lh-relaxed: 1.75;
 
-  /* Tracking — tipografía tiene su lenguaje */
-  --tracking-tight: -0.02em;        /* hero serif */
+  --tracking-tight: -0.02em;
   --tracking-normal: 0;
-  --tracking-wide: 0.04em;          /* labels small caps */
-  --tracking-wider: 0.12em;         /* uppercase eyebrow */
+  --tracking-wide: 0.04em;
+  --tracking-wider: 0.12em;
 
-  /* ===== Espaciado (escala 4px) — más generoso ===== */
+  /* ===== Espaciado ===== */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -83,31 +79,27 @@
   --space-8: 64px;
   --space-9: 96px;
 
-  /* Radios — refinados, no chillones */
   --radius-input: 6px;
   --radius-card: 10px;
   --radius-pill: 999px;
   --radius-full: 50%;
 
-  /* Touch targets */
   --touch-min: 44px;
   --touch-fab: 56px;
 
-  /* Animación — más lentas, más delicadas */
   --duration-micro: 180ms;
   --duration-enter: 280ms;
   --duration-exit: 200ms;
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);     /* expo out, sensación liquid */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
 
-  /* Z-index */
   --z-nav: 10;
   --z-fab: 20;
   --z-toast: 40;
   --z-modal: 100;
 
-  /* Materia — tonos refinados, harmonía con cream bg */
+  /* Materia */
   --materia-civil: #5C7AA0;
   --materia-familia: #B07A8C;
   --materia-laboral: #B07859;
@@ -116,18 +108,18 @@
   --materia-otro: #80847A;
 }
 
-/* ===== Modo oscuro: warm dark, no negro puro ===== */
+/* ===== Modo oscuro ===== */
 :root[data-theme="dark"] {
-  --surface-bg: #1A1C1A;
-  --surface-card: #232524;
-  --surface-elevated: #2B2D2B;
-  --surface-muted: #1F2120;
+  --surface-bg: #16181A;
+  --surface-card: #1F2123;
+  --surface-elevated: #25282A;
+  --surface-muted: #1A1C1E;
   --surface-overlay: rgba(0, 0, 0, 0.6);
-  --surface-grain: rgba(255, 255, 255, 0.015);
+  --surface-grain: rgba(255, 255, 255, 0);
 
-  --text-primary: #EFECE2;
-  --text-secondary: #A3A398;
-  --text-tertiary: #6E6F66;
+  --text-primary: #EFECE6;
+  --text-secondary: #A8A8A1;
+  --text-tertiary: #7A7C75;
   --text-on-accent: #FFFFFF;
 
   --accent-primary: #8FAB94;
@@ -137,12 +129,12 @@
 
   --status-ok: #8FAB94;
   --status-warn: #D2B070;
-  --status-urgent: #D08570;
+  --status-urgent: #D88471;
   --status-completed: #494B47;
 
-  --border-subtle: #2C2E2C;
+  --border-subtle: #2A2C2E;
   --border-strong: #3D403D;
-  --border-divider: #353835;
+  --border-divider: #34373A;
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.35);
@@ -158,16 +150,16 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --surface-bg: #1A1C1A;
-    --surface-card: #232524;
-    --surface-elevated: #2B2D2B;
-    --surface-muted: #1F2120;
+    --surface-bg: #16181A;
+    --surface-card: #1F2123;
+    --surface-elevated: #25282A;
+    --surface-muted: #1A1C1E;
     --surface-overlay: rgba(0, 0, 0, 0.6);
-    --surface-grain: rgba(255, 255, 255, 0.015);
+    --surface-grain: rgba(255, 255, 255, 0);
 
-    --text-primary: #EFECE2;
-    --text-secondary: #A3A398;
-    --text-tertiary: #6E6F66;
+    --text-primary: #EFECE6;
+    --text-secondary: #A8A8A1;
+    --text-tertiary: #7A7C75;
 
     --accent-primary: #8FAB94;
     --accent-primary-hover: #A4C0A8;
@@ -176,12 +168,12 @@
 
     --status-ok: #8FAB94;
     --status-warn: #D2B070;
-    --status-urgent: #D08570;
+    --status-urgent: #D88471;
     --status-completed: #494B47;
 
-    --border-subtle: #2C2E2C;
+    --border-subtle: #2A2C2E;
     --border-strong: #3D403D;
-    --border-divider: #353835;
+    --border-divider: #34373A;
 
     --materia-civil: #8FA7C5;
     --materia-familia: #CFA0B0;

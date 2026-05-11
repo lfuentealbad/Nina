@@ -1,29 +1,58 @@
-// Modal de captura rápida — un campo (título) opcional + selector de causa.
-// También exporta openInboxRevision para procesar tareas sin fecha.
+// Modal de captura rápida con parser inline.
+// Nina escribe en lenguaje natural ("Audiencia mañana 10am Pérez con Rojas")
+// y el parser extrae fecha, hora y tipo en chips editables debajo del input.
+// Cada chip se puede borrar con un toque. Botón Guardar siempre habilitado.
 
 import db from '../db.js';
 import { el, modal, toast } from '../lib/render.js';
 import { hoyISO, formatoCorto } from '../lib/fechas.js';
 import { icon } from '../lib/icons.js';
+import { parsearCaptura } from '../lib/parser.js';
 import { ofrecerBorrarEjemplosSiPrimerRegistroPropio } from '../lib/datos-ejemplo.js';
+import { despacharACalendario } from '../lib/calendar.js';
 
-/** Abre el modal de captura rápida. Crea una tarea sin fecha (bandeja de entrada). */
+const ETIQUETAS_TIPO = {
+  audiencia: 'audiencia',
+  plazo: 'plazo',
+  gestion: 'gestión',
+};
+
+/** Abre el modal de captura rápida. */
 export async function openCapturaRapida() {
   const causas = await db.causas.list({ archivada: false });
 
+  // Estado interno de la captura — el parser lo va alimentando, los chips lo pueden vaciar.
+  const estado = {
+    titulo: '',
+    fechaVencimiento: null,
+    horaVencimiento: null,
+    tipo: 'gestion',
+  };
+
   let close;
+  let timer = null;
 
   const tituloInput = el('input.input', {
     type: 'text',
     placeholder: 'Anota lo que tengas en mente…',
     autocomplete: 'off',
-    aria: { label: 'Título de tarea' },
+    aria: { label: 'Captura libre' },
     on: {
+      input: () => {
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(reparsear, 500);
+      },
+      blur: () => {
+        if (timer) { clearTimeout(timer); timer = null; }
+        reparsear();
+      },
       keydown: (e) => {
         if (e.key === 'Enter') { e.preventDefault(); guardar(); }
       },
     },
   });
+
+  const chipsRow = el('div.captura-chips');
 
   const causaSelect = el('select.select', {
     aria: { label: 'Causa relacionada (opcional)' },
@@ -45,13 +74,13 @@ export async function openCapturaRapida() {
         on: { click: () => close() },
       }, [icon('x', { size: 22 })]),
     ]),
-    el('div.field', {}, [tituloInput]),
+    el('div.field', {}, [tituloInput, chipsRow]),
     el('div.field', {}, [
       el('label.label', { text: 'Causa (opcional)' }),
       causaSelect,
     ]),
     el('p.helper', {
-      text: 'Sin fecha: queda en tu bandeja de entrada para procesar después.',
+      text: 'Puedes escribir libre. Si menciono fecha, hora o tipo, lo detecto.',
     }),
     el('button.btn.btn-primary.btn-block', {
       type: 'submit', text: 'Guardar',
@@ -61,27 +90,92 @@ export async function openCapturaRapida() {
 
   close = modal(content, { ariaLabel: 'Captura rápida' });
 
+  function reparsear() {
+    const raw = tituloInput.value;
+    if (!raw.trim()) {
+      estado.titulo = '';
+      estado.fechaVencimiento = null;
+      estado.horaVencimiento = null;
+      estado.tipo = 'gestion';
+      renderChips();
+      return;
+    }
+    const parsed = parsearCaptura(raw);
+    estado.titulo = parsed.titulo || raw.trim();
+    estado.fechaVencimiento = parsed.fechaVencimiento;
+    estado.horaVencimiento = parsed.horaVencimiento;
+    estado.tipo = parsed.tipo;
+    renderChips();
+  }
+
+  function renderChips() {
+    const chips = [];
+    if (estado.fechaVencimiento) {
+      chips.push(chip('📅', formatoCorto(estado.fechaVencimiento), () => {
+        estado.fechaVencimiento = null;
+        renderChips();
+      }));
+    }
+    if (estado.horaVencimiento) {
+      chips.push(chip('🕐', estado.horaVencimiento, () => {
+        estado.horaVencimiento = null;
+        renderChips();
+      }));
+    }
+    if (estado.tipo && estado.tipo !== 'gestion') {
+      chips.push(chip('📋', ETIQUETAS_TIPO[estado.tipo], () => {
+        estado.tipo = 'gestion';
+        renderChips();
+      }));
+    }
+    chipsRow.replaceChildren(...chips);
+  }
+
   async function guardar() {
-    const titulo = tituloInput.value.trim();
-    if (!titulo) {
+    // Asegurar parseo final si el usuario presionó Enter rápido.
+    if (timer) { clearTimeout(timer); timer = null; }
+    if (!estado.titulo) reparsear();
+    if (!estado.titulo) {
       tituloInput.focus();
       return;
     }
     const data = {
-      titulo,
+      titulo: estado.titulo,
       causaId: causaSelect.value || null,
-      tipo: 'gestion',
-      fechaVencimiento: null,
+      tipo: estado.tipo,
+      fechaVencimiento: estado.fechaVencimiento,
+      horaVencimiento: estado.horaVencimiento,
     };
-    await db.tareas.create(data);
+    const creada = await db.tareas.create(data);
     close();
-    toast('Anotada en bandeja de entrada');
+    toast(estado.fechaVencimiento ? 'Tarea guardada' : 'Anotada en bandeja de entrada');
     ofrecerBorrarEjemplosSiPrimerRegistroPropio(db, toast);
-    // Refrescar vista actual si es Hoy.
-    if (location.hash === '' || location.hash === '#' || location.hash === '#hoy') {
-      window.dispatchEvent(new HashChangeEvent('hashchange'));
+    // Auto-calendario: si está activado y es una audiencia con fecha y hora.
+    if (debeAutoEnviarseACalendario(creada)) {
+      const causa = creada.causaId ? await db.causas.get(creada.causaId) : null;
+      despacharACalendario(creada, causa, toast);
     }
+    window.dispatchEvent(new HashChangeEvent('hashchange'));
   }
+}
+
+function debeAutoEnviarseACalendario(tarea) {
+  return localStorage.getItem('auto-calendario') === '1'
+    && tarea.tipo === 'audiencia'
+    && !!tarea.fechaVencimiento
+    && !!tarea.horaVencimiento;
+}
+
+function chip(icono, texto, onRemove) {
+  return el('button.captura-chip', {
+    type: 'button',
+    aria: { label: `Quitar ${texto}` },
+    on: { click: onRemove },
+  }, [
+    el('span.captura-chip-icono', { text: icono }),
+    el('span', { text: texto }),
+    icon('x', { size: 14 }),
+  ]);
 }
 
 /** Modal de revisión de bandeja de entrada — asignar fecha/causa una a una. */
@@ -151,7 +245,7 @@ export async function openInboxRevision() {
         el('button.btn.btn-ghost', {
           type: 'button', text: 'Saltar',
           style: { flex: '1' },
-          on: { click: () => { idx++; replaceContent(); } },
+          on: { click: () => { idx++; renderItem(); } },
         }),
         el('button.btn.btn-secondary', {
           type: 'button', text: 'Eliminar',
@@ -159,7 +253,7 @@ export async function openInboxRevision() {
           on: { click: async () => {
             await db.tareas.delete(tarea.id);
             idx++;
-            replaceContent();
+            renderItem();
           } },
         }),
         el('button.btn.btn-primary', {
@@ -171,16 +265,12 @@ export async function openInboxRevision() {
               causaId: causaSelect.value || null,
             });
             idx++;
-            replaceContent();
+            renderItem();
           } },
         }),
       ]),
     ]);
 
     container.replaceChildren(...content.childNodes);
-  }
-
-  function replaceContent() {
-    renderItem();
   }
 }

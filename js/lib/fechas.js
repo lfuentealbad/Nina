@@ -69,11 +69,14 @@ export function semaforo(fechaISO) {
   return { class: 'semaforo-far', label: `En ${dias} días`, dias };
 }
 
-/** "Buenos días/tardes/noches" según la hora local. */
+/**
+ * "Buenos días/tardes/noches" según la hora local.
+ * Cortes: 5–12 días, 12–20 tardes, 20–5 noches.
+ */
 export function saludoPorHora(fecha = new Date()) {
   const h = fecha.getHours();
-  if (h < 12) return 'Buenos días';
-  if (h < 19) return 'Buenas tardes';
+  if (h >= 5 && h < 12) return 'Buenos días';
+  if (h >= 12 && h < 20) return 'Buenas tardes';
   return 'Buenas noches';
 }
 

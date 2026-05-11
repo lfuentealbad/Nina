@@ -8,6 +8,7 @@ const ICONS = {
   plus: 'M5 12h14 M12 5v14',
   search: 'm21 21-4.34-4.34 M16.5 11a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z',
   calendar: 'M8 2v4 M16 2v4 M3 10h18 M21 6v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z',
+  calendarPlus: 'M8 2v4 M16 2v4 M3 10h18 M21 13V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h8 M16 19h6 M19 16v6',
   clock: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z M12 6v6l4 2',
   fileText: 'M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8',
   archive: 'M21 8v13H3V8 M1 3h22v5H1z M10 12h4',

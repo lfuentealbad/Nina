@@ -2,7 +2,7 @@
 // Campos obligatorios: rol, tribunal, materia (≤30s para crear).
 
 import db from '../db.js';
-import { el, mount, toast, confirmar } from '../lib/render.js';
+import { el, mount, toast, confirmar, modal } from '../lib/render.js';
 import { icon } from '../lib/icons.js';
 import { ofrecerBorrarEjemplosSiPrimerRegistroPropio } from '../lib/datos-ejemplo.js';
 
@@ -169,9 +169,98 @@ export default async function renderCausaForm(root, { id } = {}) {
       const created = await db.causas.create(data);
       toast('Causa creada');
       ofrecerBorrarEjemplosSiPrimerRegistroPropio(db, toast);
+      await ofrecerAsociarTareasHuerfanas(created);
       location.hash = `#causas/${created.id}`;
     }
   }
+}
+
+// ===== Sugeridor de tareas huérfanas =====
+// Si hay tareas sin causa en la bandeja cuyo título menciona el caratulado o
+// la contraparte de la nueva causa, ofrece asociarlas en un modal corto.
+const STOPWORDS = new Set([
+  'con', 'vs', 'de', 'la', 'el', 'los', 'las', 'un', 'una', 'y', 'o', 'a',
+  'al', 'del', 'en', 'por', 'para', 'sin', 'sobre', 'que', 'spa', 'ltda', 'sa',
+]);
+
+function palabrasClave(causa) {
+  const fuentes = [causa.caratulado, causa.contraparte].filter(Boolean).join(' ');
+  return [...new Set(
+    fuentes
+      .toLowerCase()
+      .replace(/[.,;()]/g, ' ')
+      .split(/\s+/)
+      .filter((w) => w.length > 2 && !STOPWORDS.has(w))
+  )];
+}
+
+async function ofrecerAsociarTareasHuerfanas(causa) {
+  const claves = palabrasClave(causa);
+  if (claves.length === 0) return;
+
+  const inbox = await db.tareas.inbox();
+  const candidatas = inbox.filter((t) => {
+    if (t.causaId) return false;
+    const tituloLower = (t.titulo || '').toLowerCase();
+    return claves.some((k) => tituloLower.includes(k));
+  });
+  if (candidatas.length === 0) return;
+
+  return new Promise((resolve) => {
+    let close;
+    const seleccionadas = new Set(candidatas.map((t) => t.id));
+
+    const lista = el('div.huerfanas-lista', {}, candidatas.map((t) => {
+      const checkbox = el('input', {
+        type: 'checkbox', id: `h-${t.id}`, checked: true,
+        on: {
+          change: (e) => {
+            if (e.target.checked) seleccionadas.add(t.id);
+            else seleccionadas.delete(t.id);
+          },
+        },
+      });
+      return el('label.huerfanas-fila', { for: `h-${t.id}` }, [
+        checkbox,
+        el('span', { text: t.titulo }),
+      ]);
+    }));
+
+    const content = el('div.stack', {}, [
+      el('div.modal-header', {}, [
+        el('div.modal-title', { text: 'Tareas relacionadas' }),
+        el('button.btn-icon', {
+          type: 'button', aria: { label: 'Cerrar' },
+          on: { click: () => { close(); resolve(); } },
+        }, [icon('x', { size: 22 })]),
+      ]),
+      el('p.helper', {
+        text: `Encontré ${candidatas.length} ${candidatas.length === 1 ? 'tarea que menciona' : 'tareas que mencionan'} esta causa. ¿Las asocio?`,
+      }),
+      lista,
+      el('div.row', { style: { marginTop: 'var(--space-4)', gap: 'var(--space-2)' } }, [
+        el('button.btn.btn-ghost', {
+          type: 'button', text: 'Ahora no', style: { flex: '1' },
+          on: { click: () => { close(); resolve(); } },
+        }),
+        el('button.btn.btn-primary', {
+          type: 'button', text: 'Asociar', style: { flex: '1.4' },
+          on: { click: async () => {
+            for (const id of seleccionadas) {
+              await db.tareas.update(id, { causaId: causa.id });
+            }
+            close();
+            if (seleccionadas.size > 0) {
+              toast(`${seleccionadas.size} ${seleccionadas.size === 1 ? 'tarea asociada' : 'tareas asociadas'}`);
+            }
+            resolve();
+          } },
+        }),
+      ]),
+    ]);
+
+    close = modal(content, { ariaLabel: 'Asociar tareas a la causa' });
+  });
 }
 
 // ===== Helpers de campo con validación inline =====

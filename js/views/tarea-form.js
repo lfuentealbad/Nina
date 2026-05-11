@@ -6,6 +6,7 @@ import { el, mount, toast, confirmar } from '../lib/render.js';
 import { icon } from '../lib/icons.js';
 import { hoyISO } from '../lib/fechas.js';
 import { ofrecerBorrarEjemplosSiPrimerRegistroPropio } from '../lib/datos-ejemplo.js';
+import { despacharACalendario } from '../lib/calendar.js';
 
 const TIPOS = [
   ['gestion', 'Gestión'],
@@ -56,12 +57,67 @@ export default async function renderTareaForm(root, { id } = {}) {
   });
   const tituloErr = el('p.error', { hidden: true });
 
-  const causaSelect = el('select.select', { id: 'f-causa' }, [
-    el('option', { value: '', text: 'Sin causa específica' }),
-    ...causas.map((c) =>
-      el('option', { value: c.id, text: c.caratulado || `(${c.rol || 'sin rol'})`, selected: c.id === tarea.causaId })
-    ),
-  ]);
+  // Selector de causa con autocompletado (mejor en mobile que un select nativo).
+  let causaIdSel = tarea.causaId || null;
+  const seleccionInicial = causaIdSel ? causas.find((c) => c.id === causaIdSel) : null;
+  const causaInput = el('input.input', {
+    type: 'text', id: 'f-causa',
+    placeholder: 'Buscar causa por caratulado, rol o contraparte (opcional)',
+    autocomplete: 'off',
+    value: seleccionInicial
+      ? (seleccionInicial.caratulado || seleccionInicial.rol || '')
+      : '',
+    on: {
+      input: () => mostrarSugerencias(),
+      focus: () => mostrarSugerencias(),
+      blur: () => setTimeout(() => { sugerenciasBox.hidden = true; }, 180),
+    },
+  });
+  const limpiarBtn = el('button.causa-clear', {
+    type: 'button',
+    'aria-label': 'Quitar causa seleccionada',
+    hidden: !causaIdSel,
+    on: { click: () => {
+      causaIdSel = null;
+      causaInput.value = '';
+      limpiarBtn.hidden = true;
+      causaInput.focus();
+      mostrarSugerencias();
+    } },
+  }, [icon('x', { size: 16 })]);
+  const sugerenciasBox = el('div.causa-sugerencias', { hidden: true });
+
+  function mostrarSugerencias() {
+    const q = causaInput.value.toLowerCase().trim();
+    const matches = (!q
+      ? causas.slice(0, 6)
+      : causas.filter((c) =>
+          (c.caratulado || '').toLowerCase().includes(q) ||
+          (c.rol || '').toLowerCase().includes(q) ||
+          (c.contraparte || '').toLowerCase().includes(q)
+        ).slice(0, 6)
+    );
+    if (matches.length === 0) { sugerenciasBox.hidden = true; return; }
+    sugerenciasBox.replaceChildren(...matches.map((c) =>
+      el('button.causa-sugerencia', {
+        type: 'button',
+        on: { click: () => seleccionarCausa(c) },
+      }, [
+        el('div.causa-sugerencia-tit', { text: c.caratulado || '(sin caratulado)' }),
+        (c.rol || c.contraparte) && el('div.causa-sugerencia-meta', {
+          text: [c.rol, c.contraparte].filter(Boolean).join(' · '),
+        }),
+      ])
+    ));
+    sugerenciasBox.hidden = false;
+  }
+
+  function seleccionarCausa(c) {
+    causaIdSel = c.id;
+    causaInput.value = c.caratulado || c.rol || '';
+    sugerenciasBox.hidden = true;
+    limpiarBtn.hidden = false;
+  }
 
   const fechaInput = el('input.input', {
     type: 'date', value: tarea.fechaVencimiento || '', id: 'f-fecha',
@@ -100,7 +156,8 @@ export default async function renderTareaForm(root, { id } = {}) {
         ]),
         el('div.field', {}, [
           el('label.label', { for: 'f-causa', text: 'Causa relacionada' }),
-          causaSelect,
+          el('div.causa-picker', {}, [causaInput, limpiarBtn]),
+          sugerenciasBox,
         ]),
       ]),
 
@@ -114,6 +171,15 @@ export default async function renderTareaForm(root, { id } = {}) {
           el('div.field', {}, [el('label.label', { for: 'f-desc', text: 'Descripción' }), descTextarea]),
         ]),
       ]),
+
+      editing && tarea.fechaVencimiento && el('button.btn.btn-secondary.btn-block', {
+        type: 'button',
+        style: { marginTop: 'var(--space-3)' },
+        on: { click: async () => {
+          const causa = tarea.causaId ? await db.causas.get(tarea.causaId) : null;
+          despacharACalendario(tarea, causa, toast);
+        } },
+      }, [icon('calendarPlus', { size: 18 }), el('span', { text: 'Agregar al calendario' })]),
 
       el('div.form-actions', {}, [
         el('a.btn.btn-ghost', { href: backHref, text: 'Cancelar' }),
@@ -167,17 +233,29 @@ export default async function renderTareaForm(root, { id } = {}) {
       fechaVencimiento: fechaInput.value || null,
       horaVencimiento: horaInput.value || null,
       prioridad: prioridadSelect.value,
-      causaId: causaSelect.value || null,
+      causaId: causaInput.value.trim() ? causaIdSel : null,
     };
 
+    let creada;
     if (editing) {
-      await db.tareas.update(id, data);
+      creada = await db.tareas.update(id, data);
       toast('Tarea actualizada');
     } else {
-      await db.tareas.create(data);
+      creada = await db.tareas.create(data);
       toast('Tarea creada');
       ofrecerBorrarEjemplosSiPrimerRegistroPropio(db, toast);
     }
+    if (debeAutoEnviarseACalendario(creada)) {
+      const causa = creada.causaId ? await db.causas.get(creada.causaId) : null;
+      despacharACalendario(creada, causa, toast);
+    }
     location.hash = backHref;
   }
+}
+
+function debeAutoEnviarseACalendario(tarea) {
+  return localStorage.getItem('auto-calendario') === '1'
+    && tarea.tipo === 'audiencia'
+    && !!tarea.fechaVencimiento
+    && !!tarea.horaVencimiento;
 }

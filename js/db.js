@@ -46,7 +46,7 @@ function openDb() {
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
-    req.onblocked = () => reject(new Error('DB blocked: cierra otras pestañas con Carolina abierta'));
+    req.onblocked = () => reject(new Error('DB blocked: cierra otras pestañas con Nina abierta'));
   });
   return dbPromise;
 }
@@ -191,6 +191,7 @@ const tareas = {
       completadaEn: null,
       subtareas: null,    // Array de { titulo, completada, completadaEn } o null
       esEjemplo: false,
+      vencida: false,     // marcada por la reprogramación silenciosa cuando una audiencia pasa sin completarse
       ...data,
       creadaEn: nowTimestamp(),
     };

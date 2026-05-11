@@ -126,17 +126,19 @@ export default async function renderFicha(root, { id }) {
 
   // ===== Sección Tareas =====
   function renderTareasSection(c, tareasList) {
-    const pendientes = tareasList.filter((t) => !t.completada);
+    const pendientes = tareasList.filter((t) => !t.completada && !t.vencida);
+    const vencidas = tareasList.filter((t) => !t.completada && t.vencida);
     const completadas = tareasList.filter((t) => t.completada);
 
     const items = [];
-    if (pendientes.length === 0 && completadas.length === 0) {
+    if (pendientes.length === 0 && vencidas.length === 0 && completadas.length === 0) {
       items.push(el('p', {
         text: 'Sin tareas en esta causa.',
         style: { color: 'var(--text-tertiary)' },
       }));
     } else {
       items.push(...pendientes.map((t) => renderTareaItem(t, refresh)));
+      items.push(...vencidas.map((t) => renderTareaItem(t, refresh)));
       if (completadas.length > 0) {
         items.push(
           el('details', { style: { marginTop: 'var(--space-3)' } }, [
@@ -157,8 +159,9 @@ export default async function renderFicha(root, { id }) {
       }, [icon('plus', { size: 18 }), el('span', { text: 'Nueva tarea' })])
     );
 
-    return el('details.collapsible', { open: pendientes.length > 0 }, [
-      el('summary', { text: `Tareas (${pendientes.length})` }),
+    const totalActivas = pendientes.length + vencidas.length;
+    return el('details.collapsible', { open: totalActivas > 0 }, [
+      el('summary', { text: `Tareas (${totalActivas})` }),
       el('div.body.stack-tight', {}, items),
     ]);
   }
@@ -243,7 +246,11 @@ function renderTareaItem(t, onChange) {
   const subComplete = tieneSubs && subDone === subTotal;
 
   const card = el('article', {
-    class: t.completada ? 'tarea-row done' : 'tarea-row',
+    class: [
+      'tarea-row',
+      t.completada ? 'done' : '',
+      t.vencida ? 'vencida' : '',
+    ].filter(Boolean).join(' '),
   }, [
     el('button', {
       class: t.completada ? 'tarea-checkbox checked' : 'tarea-checkbox',
@@ -272,9 +279,10 @@ function renderTareaItem(t, onChange) {
           text: `${subDone}/${subTotal}`,
         }),
         t.esEjemplo && el('span.badge-ejemplo', { text: 'ejemplo' }),
+        t.vencida && el('span.badge-no-asistida', { text: 'no asistida' }),
       ]),
       el('div.tarea-meta', {}, [
-        sem && el('span', { class: `semaforo ${sem.class}`, text: (sem.label || '').toLowerCase() }),
+        sem && !t.vencida && el('span', { class: `semaforo ${sem.class}`, text: (sem.label || '').toLowerCase() }),
         t.fechaVencimiento && el('span', { text: formatoCorto(t.fechaVencimiento) }),
         t.horaVencimiento && el('span.tabular', { text: t.horaVencimiento }),
       ]),
