@@ -9,7 +9,7 @@ import { hoyISO, formatoCorto } from '../lib/fechas.js';
 import { icon } from '../lib/icons.js';
 import { parsearCaptura } from '../lib/parser.js';
 import { ofrecerBorrarEjemplosSiPrimerRegistroPropio } from '../lib/datos-ejemplo.js';
-import { despacharACalendario } from '../lib/calendar.js';
+import { abrirMenuCalendario } from '../lib/calendar.js';
 
 const ETIQUETAS_TIPO = {
   audiencia: 'audiencia',
@@ -153,7 +153,7 @@ export async function openCapturaRapida() {
     // Auto-calendario: si está activado y es una audiencia con fecha y hora.
     if (debeAutoEnviarseACalendario(creada)) {
       const causa = creada.causaId ? await db.causas.get(creada.causaId) : null;
-      despacharACalendario(creada, causa, toast);
+      abrirMenuCalendario(creada, causa, toast);
     }
     window.dispatchEvent(new HashChangeEvent('hashchange'));
   }

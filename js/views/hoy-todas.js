@@ -12,7 +12,7 @@ import { el, mount, toast } from '../lib/render.js';
 import { icon } from '../lib/icons.js';
 import { hoyISO, toISO, formatoCorto, semaforo } from '../lib/fechas.js';
 import { openInboxRevision } from './captura-rapida.js';
-import { despacharACalendario } from '../lib/calendar.js';
+import { abrirMenuCalendario } from '../lib/calendar.js';
 
 export default async function renderHoyTodas(root) {
   const view = el('div.view-hoy-todas.app-container', {}, []);
@@ -102,7 +102,7 @@ function renderFila(t, causasMap, onChange) {
       on: { click: (e) => {
         e.stopPropagation();
         const causa = t.causaId ? causasMap.get(t.causaId) : null;
-        despacharACalendario(t, causa, toast);
+        abrirMenuCalendario(t, causa, toast);
       } },
     }, [icon('calendarPlus', { size: 18 })]),
   ]);

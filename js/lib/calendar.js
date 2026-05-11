@@ -170,16 +170,6 @@ function botonOpcion({ iconoNombre, titulo, descripcion, destacado = false, onCl
   return wrapper;
 }
 
-// ===== Compatibilidad con el resto de la app =====
-
-/**
- * Wrapper mantenido por compatibilidad con las vistas: ahora delega siempre
- * al menú (y este decide si abre Google directo o muestra las opciones).
- */
-export function despacharACalendario(tarea, causa, toast) {
-  abrirMenuCalendario(tarea, causa, toast);
-}
-
 // ===== Generación de .ics (Apple Calendar fallback) =====
 
 /** Construye un iCalendar válido (RFC 5545) para una tarea. */

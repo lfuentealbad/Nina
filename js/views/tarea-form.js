@@ -6,7 +6,7 @@ import { el, mount, toast, confirmar } from '../lib/render.js';
 import { icon } from '../lib/icons.js';
 import { hoyISO } from '../lib/fechas.js';
 import { ofrecerBorrarEjemplosSiPrimerRegistroPropio } from '../lib/datos-ejemplo.js';
-import { despacharACalendario } from '../lib/calendar.js';
+import { abrirMenuCalendario } from '../lib/calendar.js';
 
 const TIPOS = [
   ['gestion', 'Gestión'],
@@ -177,7 +177,7 @@ export default async function renderTareaForm(root, { id } = {}) {
         style: { marginTop: 'var(--space-3)' },
         on: { click: async () => {
           const causa = tarea.causaId ? await db.causas.get(tarea.causaId) : null;
-          despacharACalendario(tarea, causa, toast);
+          abrirMenuCalendario(tarea, causa, toast);
         } },
       }, [icon('calendarPlus', { size: 18 }), el('span', { text: 'Agregar al calendario' })]),
 
@@ -247,7 +247,7 @@ export default async function renderTareaForm(root, { id } = {}) {
     }
     if (debeAutoEnviarseACalendario(creada)) {
       const causa = creada.causaId ? await db.causas.get(creada.causaId) : null;
-      despacharACalendario(creada, causa, toast);
+      abrirMenuCalendario(creada, causa, toast);
     }
     location.hash = backHref;
   }
