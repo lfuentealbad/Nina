@@ -6,6 +6,7 @@ import { icon } from './lib/icons.js';
 import { applyTheme } from './views/ajustes.js';
 import { openCapturaRapida } from './views/captura-rapida.js';
 import { insertarEjemplosSiVacia } from './lib/datos-ejemplo.js';
+import { avisoDiarioSiCorresponde } from './lib/aviso-diario.js';
 
 const root = document.getElementById('app');
 
@@ -174,6 +175,10 @@ window.addEventListener('hashchange', route);
 
   if (!location.hash) location.hash = '#hoy';
   else route();
+
+  // Aviso local diario (silencioso si no corresponde).
+  // Se intenta una sola vez por día y solo si ya hay permiso.
+  setTimeout(() => { avisoDiarioSiCorresponde().catch(() => {}); }, 1000);
 })();
 
 // Escuchar cambio de prefers-color-scheme para refrescar tema cuando está en "sistema".
