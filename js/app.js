@@ -40,6 +40,7 @@ const fabEl = document.getElementById('fab');
 const NAV = [
   { hash: '#hoy', label: 'Hoy', iconName: 'home' },
   { hash: '#causas', label: 'Causas', iconName: 'folder' },
+  { hash: '#calculadora', label: 'Calculadora', iconName: 'calculator' },
   { hash: '#ajustes', label: 'Ajustes', iconName: 'settings' },
 ];
 
@@ -72,7 +73,7 @@ function renderNav(currentHash) {
     on: { click: () => openCapturaRapida() },
   }, [icon('plus', { size: 16 }), el('span', { text: 'Capturar' })]));
 
-  // Sección principal (Hoy / Causas)
+  // Sección Trabajo (Hoy / Causas)
   sidebarEl.appendChild(el('div.sidebar-section-title', { text: 'Trabajo' }));
   for (const item of NAV.slice(0, 2)) {
     const isActive = matchesNav(currentHash, item.hash);
@@ -83,9 +84,20 @@ function renderNav(currentHash) {
     }, [icon(item.iconName, { size: 18 }), el('span', { text: item.label })]));
   }
 
+  // Sección Herramientas (Calculadora)
+  sidebarEl.appendChild(el('div.sidebar-section-title', { text: 'Herramientas' }));
+  for (const item of NAV.slice(2, 3)) {
+    const isActive = matchesNav(currentHash, item.hash);
+    sidebarEl.appendChild(el('a', {
+      class: `nav-item ${isActive ? 'active' : ''}`,
+      href: item.hash,
+      aria: { current: isActive ? 'page' : 'false' },
+    }, [icon(item.iconName, { size: 18 }), el('span', { text: item.label })]));
+  }
+
   // Spacer + Ajustes al pie
   sidebarEl.appendChild(el('div.sidebar-spacer'));
-  for (const item of NAV.slice(2)) {
+  for (const item of NAV.slice(3)) {
     const isActive = matchesNav(currentHash, item.hash);
     sidebarEl.appendChild(el('a', {
       class: `nav-item ${isActive ? 'active' : ''}`,
@@ -117,6 +129,9 @@ const ROUTES = [
   { pattern: /^#causas$/,                      view: () => import('./views/causas-lista.js'),params: () => ({}),                showFab: true,  showNav: true },
   { pattern: /^#tareas\/nueva/,                view: () => import('./views/tarea-form.js'),  params: () => ({}),                showFab: false, showNav: true },
   { pattern: /^#tareas\/([^/]+)\/editar$/,     view: () => import('./views/tarea-form.js'),  params: (m) => ({ id: m[1] }),     showFab: false, showNav: true },
+  { pattern: /^#calculadora$/,                 view: () => import('./views/calculadora.js'), params: () => ({}),                showFab: false, showNav: true },
+  { pattern: /^#calculadora\/arancel\/nueva$/, view: () => import('./views/arancel-form.js'),params: () => ({}),                showFab: false, showNav: true },
+  { pattern: /^#calculadora\/arancel\/([^/]+)$/, view: () => import('./views/arancel-form.js'), params: (m) => ({ id: m[1] }),   showFab: false, showNav: true },
   { pattern: /^#ajustes$/,                     view: () => import('./views/ajustes.js'),     params: () => ({}),                showFab: false, showNav: true },
 ];
 
