@@ -7,6 +7,7 @@ import { icon } from '../lib/icons.js';
 import { hoyISO, toISO, formatoLargo, semaforo, saludoPorHora } from '../lib/fechas.js';
 import { fraseDelDia } from '../lib/saludo.js';
 import { reprogramarSilencioso } from '../lib/reprogramar.js';
+import { despacharACalendario } from '../lib/calendar.js';
 
 export default async function renderHoy(root) {
   // Mueve pendientes de ayer a hoy (silencioso) antes de elegir el foco.
@@ -138,6 +139,14 @@ function renderTarjetaFoco({ tarea, causa, sem }, onChange) {
         tarea.esEjemplo && el('span.badge-ejemplo', { text: 'ejemplo' }),
       ]),
       meta && el('div.hoy-foco-meta', { text: meta }),
+      el('button.hoy-foco-cal', {
+        type: 'button',
+        aria: { label: 'Mandar al calendario' },
+        on: { click: (e) => {
+          e.stopPropagation();
+          despacharACalendario(tarea, causa, toast);
+        } },
+      }, [icon('calendarPlus', { size: 16 }), el('span', { text: 'Al calendario' })]),
     ]),
     el('button.hoy-foco-completar', {
       type: 'button',

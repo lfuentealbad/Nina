@@ -12,6 +12,7 @@ import { el, mount, toast } from '../lib/render.js';
 import { icon } from '../lib/icons.js';
 import { hoyISO, toISO, formatoCorto, semaforo } from '../lib/fechas.js';
 import { openInboxRevision } from './captura-rapida.js';
+import { despacharACalendario } from '../lib/calendar.js';
 
 export default async function renderHoyTodas(root) {
   const view = el('div.view-hoy-todas.app-container', {}, []);
@@ -95,6 +96,15 @@ function renderFila(t, causasMap, onChange) {
       causa && el('div.todas-causa', { text: causa.caratulado || causa.rol || '' }),
     ]),
     t.horaVencimiento && el('span.todas-hora.tabular', { text: t.horaVencimiento }),
+    t.fechaVencimiento && el('button.todas-cal', {
+      type: 'button',
+      aria: { label: `Mandar "${t.titulo}" al calendario` },
+      on: { click: (e) => {
+        e.stopPropagation();
+        const causa = t.causaId ? causasMap.get(t.causaId) : null;
+        despacharACalendario(t, causa, toast);
+      } },
+    }, [icon('calendarPlus', { size: 18 })]),
   ]);
   return li;
 }

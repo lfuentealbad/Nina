@@ -6,6 +6,7 @@ import { el, mount, toast, confirmar } from '../lib/render.js';
 import { icon } from '../lib/icons.js';
 import { hoyISO } from '../lib/fechas.js';
 import { ofrecerBorrarEjemplosSiPrimerRegistroPropio } from '../lib/datos-ejemplo.js';
+import { despacharACalendario } from '../lib/calendar.js';
 
 const TIPOS = [
   ['gestion', 'Gestión'],
@@ -170,6 +171,15 @@ export default async function renderTareaForm(root, { id } = {}) {
           el('div.field', {}, [el('label.label', { for: 'f-desc', text: 'Descripción' }), descTextarea]),
         ]),
       ]),
+
+      editing && tarea.fechaVencimiento && el('button.btn.btn-secondary.btn-block', {
+        type: 'button',
+        style: { marginTop: 'var(--space-3)' },
+        on: { click: async () => {
+          const causa = tarea.causaId ? await db.causas.get(tarea.causaId) : null;
+          despacharACalendario(tarea, causa, toast);
+        } },
+      }, [icon('calendarPlus', { size: 18 }), el('span', { text: 'Agregar al calendario' })]),
 
       el('div.form-actions', {}, [
         el('a.btn.btn-ghost', { href: backHref, text: 'Cancelar' }),

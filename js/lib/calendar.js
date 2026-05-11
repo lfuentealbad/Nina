@@ -9,6 +9,34 @@
 
 import { fromISO } from './fechas.js';
 
+const FLAG_TOAST = 'ics-toast-shown';
+
+/**
+ * Wrapper de alto nivel para la UI: comparte el .ics y, la primera vez,
+ * muestra un toast informativo explicando qué va a pasar.
+ *
+ * @param tarea  La tarea a despachar (necesita fechaVencimiento).
+ * @param causa  Causa asociada (opcional, mejora el evento).
+ * @param toast  Función toast importada de render.js.
+ */
+export async function despacharACalendario(tarea, causa, toast) {
+  if (!tarea?.fechaVencimiento) {
+    if (toast) toast('Necesito una fecha para mandar al calendario');
+    return false;
+  }
+
+  const yaInformado = localStorage.getItem(FLAG_TOAST);
+  if (!yaInformado && toast) {
+    toast(
+      'Te preparé un archivo para tu calendario. Tu Android te va a preguntar a qué app mandarlo — elige tu calendario y desde ahí decides cuándo quieres que te avise.',
+      { dur: 8000 }
+    );
+    localStorage.setItem(FLAG_TOAST, new Date().toISOString());
+  }
+
+  return compartirICS(tarea, causa);
+}
+
 const DURACION_MIN = { audiencia: 60, plazo: 15, gestion: 30 };
 
 /**
