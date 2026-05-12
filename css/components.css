@@ -253,22 +253,12 @@
 
 /* ===== Chips ===== */
 .chip-row-wrapper { position: relative; }
-.chip-row-wrapper::after {
-  content: "";
-  position: absolute;
-  right: 0; top: 0; bottom: 0;
-  width: 32px;
-  background: linear-gradient(to right, transparent, var(--surface-bg));
-  pointer-events: none;
-}
 .chip-row {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-2);
-  overflow-x: auto;
   padding: var(--space-2) 0;
-  scrollbar-width: none;
 }
-.chip-row::-webkit-scrollbar { display: none; }
 
 .chip {
   display: inline-flex;

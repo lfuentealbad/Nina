@@ -53,7 +53,12 @@ export default async function renderCausasLista(root) {
   const chipRow = el('div.chip-row', {}, renderChips());
 
   const view = el('div.view-causas.app-container', {}, [
-    el('h1.causas-display', { text: 'causas' }),
+    el('div.causas-encabezado', {}, [
+      el('h1.causas-display', { text: 'causas' }),
+      el('a.btn.btn-primary.causas-nueva', {
+        href: '#causas/nueva',
+      }, [icon('plus', { size: 16 }), el('span', { text: 'Nueva causa' })]),
+    ]),
     el('div.causas-toolbar', {}, [
       el('div.search-wrapper', {}, [
         el('span.search-icon', {}, [icon('search', { size: 18 })]),
@@ -138,9 +143,9 @@ export default async function renderCausasLista(root) {
           ? 'sin resultados'
           : 'aún no hay causas',
       }),
-      !isFiltered && el('a.btn.btn-primary', {
+      el('a.btn.btn-primary', {
         href: '#causas/nueva',
-        text: 'Agregar la primera',
+        text: isFiltered ? 'Crear una causa nueva' : 'Agregar la primera',
       }),
     ]);
   }

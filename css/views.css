@@ -272,6 +272,14 @@
   padding-top: var(--space-7);
   padding-bottom: var(--space-9);
 }
+.causas-encabezado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+  flex-wrap: wrap;
+}
 .causas-display {
   font-family: var(--font-display);
   font-style: italic;
@@ -280,9 +288,13 @@
   line-height: 1;
   letter-spacing: var(--tracking-tight);
   color: var(--text-primary);
-  margin-bottom: var(--space-6);
+  margin: 0;
 }
 .causas-display::after { content: "."; color: var(--accent-primary); }
+.causas-nueva {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
 
 .causas-toolbar {
   display: flex; flex-direction: column;
