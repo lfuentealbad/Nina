@@ -27,7 +27,7 @@ export async function avisoDiarioSiCorresponde() {
   }
 
   try {
-    const n = new Notification('Tu día en Nina', {
+    const n = new Notification('Tu día de hoy', {
       body: resumen,
       silent: false,
       tag: 'nina-aviso-diario',

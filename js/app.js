@@ -180,7 +180,7 @@ window.addEventListener('hashchange', route);
     if (insertaron) {
       setTimeout(() => {
         toast(
-          'Te dejé un par de ejemplos para que veas cómo se ve Nina. Borralos cuando quieras desde Ajustes.',
+          'Te dejé un par de ejemplos para que veas cómo funciona. Bórralos cuando quieras desde Ajustes.',
           { dur: 7000 }
         );
       }, 500);
