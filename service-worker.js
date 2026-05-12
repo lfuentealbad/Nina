@@ -4,7 +4,7 @@
 //     así un fix llega en la siguiente carga sin esperar bump de VERSION).
 //   - HTML/navigation: network-first con fallback al cache.
 // Versión bumpeada → invalida cachés viejas en activate.
-const VERSION = 'nina-v3-aranceles-2026-05-swr';
+const VERSION = 'nina-v3-aranceles-2026-05-anotar';
 
 // BASE resuelve correctamente sea hosting en raíz o en subpath de GitHub Pages.
 const BASE = new URL('./', self.location.href).pathname;

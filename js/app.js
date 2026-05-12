@@ -60,18 +60,18 @@ function renderNav(currentHash) {
     navEl.appendChild(link);
   }
 
-  // Sidebar (desktop) — brand + Capturar + nav agrupado + version al pie
+  // Sidebar (desktop) — brand + Anotar + nav agrupado + version al pie
   sidebarEl.replaceChildren();
   sidebarEl.appendChild(el('div.sidebar-brand', {}, [
     el('span.brand-dot', { aria: { hidden: 'true' } }),
     el('span', { text: 'Nina' }),
   ]));
 
-  // Botón Capturar (reemplaza al FAB en desktop)
+  // Botón Anotar (reemplaza al FAB en desktop)
   sidebarEl.appendChild(el('button.sidebar-cta', {
     type: 'button',
     on: { click: () => openCapturaRapida() },
-  }, [icon('plus', { size: 16 }), el('span', { text: 'Capturar' })]));
+  }, [icon('plus', { size: 16 }), el('span', { text: 'Anotar' })]));
 
   // Sección Trabajo (Hoy / Causas)
   sidebarEl.appendChild(el('div.sidebar-section-title', { text: 'Trabajo' }));
