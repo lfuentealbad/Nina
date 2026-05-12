@@ -1,6 +1,10 @@
-// Service worker — estrategia cache-first para shell, fallback a index.html para navegación SPA.
+// Service worker — estrategia híbrida:
+//   - CSS y SVG: cache-first (cambian poco, sirven offline).
+//   - JS: stale-while-revalidate (sirve cache rápido pero revalida con red,
+//     así un fix llega en la siguiente carga sin esperar bump de VERSION).
+//   - HTML/navigation: network-first con fallback al cache.
 // Versión bumpeada → invalida cachés viejas en activate.
-const VERSION = 'nina-v3-aranceles-2026-05-fix-calculadora';
+const VERSION = 'nina-v3-aranceles-2026-05-swr';
 
 // BASE resuelve correctamente sea hosting en raíz o en subpath de GitHub Pages.
 const BASE = new URL('./', self.location.href).pathname;
@@ -62,6 +66,11 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+self.addEventListener('message', (event) => {
+  // Permite que la app pida actualizarse manualmente desde Ajustes.
+  if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
+});
+
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
@@ -69,18 +78,29 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
 
-  // SPA navigation fallback solo cuando la URL es la raíz de la app.
-  // Otras rutas (ej. /dev/test-db.html) NO se interceptan — fetch normal.
+  // SPA navigation: network-first con fallback al cache.
   if (req.mode === 'navigate') {
     if (url.pathname === BASE || url.pathname === BASE + 'index.html') {
       event.respondWith(
-        caches.match(BASE + 'index.html').then((cached) => cached || fetch(req))
+        fetch(req).then((res) => {
+          const clone = res.clone();
+          caches.open(VERSION).then((cache) => cache.put(BASE + 'index.html', clone));
+          return res;
+        }).catch(() => caches.match(BASE + 'index.html'))
       );
     }
     return;
   }
 
-  // Cache-first para shell y assets same-origin.
+  // JavaScript: stale-while-revalidate — sirve del cache pero revalida con red
+  // en segundo plano. Así un fix llega en la siguiente carga sin necesidad de
+  // bumpear el VERSION del SW.
+  if (url.pathname.endsWith('.js')) {
+    event.respondWith(staleWhileRevalidate(req));
+    return;
+  }
+
+  // CSS, imágenes, manifest, fonts: cache-first.
   event.respondWith(
     caches.match(req).then((cached) => {
       if (cached) return cached;
@@ -94,3 +114,13 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
+
+async function staleWhileRevalidate(req) {
+  const cache = await caches.open(VERSION);
+  const cached = await cache.match(req);
+  const fetchPromise = fetch(req).then((res) => {
+    if (res.ok) cache.put(req, res.clone());
+    return res;
+  }).catch(() => cached);
+  return cached || fetchPromise;
+}
