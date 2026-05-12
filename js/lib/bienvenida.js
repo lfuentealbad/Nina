@@ -27,7 +27,7 @@ export function mostrarBienvenidaSiPrimerUso() {
       style: { color: 'var(--text-secondary)', fontSize: 'var(--text-sm)' },
     }),
     el('ul.bienvenida-lista', {}, [
-      el('li', { text: 'Cuando capturas una audiencia o un plazo, te ofrezco mandarla a tu calendario. Tú eliges desde ahí cuándo quieres que te avise.' }),
+      el('li', { text: 'Cuando anotas una audiencia o un plazo, te ofrezco mandarla a tu calendario. Tú eliges desde ahí cuándo quieres que te avise.' }),
       el('li', { text: 'Si abres la app y tienes algo importante para hoy, te lo recuerdo una vez. Nada más.' }),
       el('li', { text: 'Todo esto se ajusta desde "Ajustes" cuando quieras.' }),
     ]),

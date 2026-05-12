@@ -206,7 +206,7 @@ function renderSeccionAvisos() {
       ]),
     ]),
     el('p.helper', {
-      text: 'Después de capturar una audiencia, te abro Google Calendar con el evento listo. Desde ahí decides cómo quieres que te avise.',
+      text: 'Después de anotar una audiencia, te abro Google Calendar con el evento listo. Desde ahí decides cómo quieres que te avise.',
     }),
   ]);
 }

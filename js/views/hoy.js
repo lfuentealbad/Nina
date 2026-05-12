@@ -163,7 +163,7 @@ function renderEmptyState() {
     el('button.btn.btn-secondary', {
       type: 'button',
       on: { click: () => import('./captura-rapida.js').then((m) => m.openCapturaRapida()) },
-    }, [el('span', { text: 'Capturar algo' })]),
+    }, [el('span', { text: 'Anotar algo' })]),
   ]);
 }
 
